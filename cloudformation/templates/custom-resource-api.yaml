@@ -224,3 +224,39 @@ Resources:
                 type: "number"
                 format: "double"
                 description: "The new desired capacity of the target"
+  PreProdStageDescription:
+    DependsOn: PreProdClientCertificate
+    Type: "AWS::ApiGateway::Stage"
+    Properties:
+      DeploymentId: !Ref PreProdDeployment
+      Description: "Pre-prod stage"
+      RestApiId: !Ref CustomResourceEndpoint
+      StageName: "preprod"
+      ClientCertificateId: !Ref PreProdClientCertificate
+  ProdStageDescription:
+    DependsOn: ProdClientCertificate
+    Type: "AWS::ApiGateway::Stage"
+    Properties:
+      DeploymentId: !Ref ProdDeployment
+      Description: "Prod stage"
+      RestApiId: !Ref CustomResourceEndpoint
+      StageName: "prod"
+      ClientCertificateId: !Ref ProdClientCertificate
+  PreProdClientCertificate:
+    Type: "AWS::ApiGateway::ClientCertificate"
+    Properties:
+      Description: "Pre-prod client certificate"
+  ProdClientCertificate:
+    Type: "AWS::ApiGateway::ClientCertificate"
+    Properties:
+      Description: "Prod client certificate"
+  PreProdDeployment:
+    Type: "AWS::ApiGateway::Deployment"
+    Properties:
+      Description: "Pre-prod deployment for the scaling API that connects to an pre-prod integration endpoint"
+      RestApiId: !Ref CustomResourceEndpoint
+  ProdDeployment:
+    Type: "AWS::ApiGateway::Deployment"
+    Properties:
+      Description: "Prod deployment for the scaling API that connects to an prod integration endpoint"
+      RestApiId: !Ref CustomResourceEndpoint
