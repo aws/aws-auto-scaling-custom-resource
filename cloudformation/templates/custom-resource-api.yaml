@@ -65,7 +65,7 @@ Resources:
               security:
               - sigv4: []
               x-amazon-apigateway-integration:
-                uri: "http://127.0.0.1:8080/v1/scalableTargetDimensions/{scalableTargetDimensionId}"
+                uri: !Ref IntegrationHttpEndpoint
                 passthroughBehavior: "when_no_match"
                 httpMethod: "GET"
                 responses:
@@ -134,7 +134,7 @@ Resources:
               security:
               - sigv4: []
               x-amazon-apigateway-integration:
-                uri: "http://127.0.0.1:8080/v1/scalableTargetDimensions/{scalableTargetDimensionId}"
+                uri: !Ref IntegrationHttpEndpoint
                 passthroughBehavior: "when_no_match"
                 httpMethod: "PATCH"
                 responses:
@@ -260,3 +260,11 @@ Resources:
     Properties:
       Description: "Prod deployment for the scaling API that connects to an prod integration endpoint"
       RestApiId: !Ref CustomResourceEndpoint
+Parameters:
+  IntegrationHttpEndpoint:
+    Type: String
+    Description: Target service integration endpoint url
+    Default: "http://127.0.0.1:8080/v1/scalableTargetDimensions/{scalableTargetDimensionId}"
+    MinLength: 62    # http://a/scalableTargetDimensions/{scalableTargetDimensionId}
+    MaxLength: 1600  # limit on length of resource id for Register API
+    AllowedPattern: ^(https?:\/\/.*\/)scalableTargetDimensions\/\{scalableTargetDimensionId\}$
