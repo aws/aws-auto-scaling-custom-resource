@@ -268,3 +268,28 @@ Parameters:
     MinLength: 62    # http://a/scalableTargetDimensions/{scalableTargetDimensionId}
     MaxLength: 1600  # limit on length of resource id for Register API
     AllowedPattern: ^(https?:\/\/.*\/)scalableTargetDimensions\/\{scalableTargetDimensionId\}$
+Outputs:
+  PreProdReourceIdPrefix:
+    Description: Pre-prod ResourceId prefix for the resource to be registered in AWS Auto Scaling
+    Value:
+      !Join
+        - ''
+        - - 'https://'
+          - !Ref CustomResourceEndpoint
+          - '.execute-api.'
+          - !Ref "AWS::Region"
+          - '.amazonaws.com/'
+          - !Ref PreProdStageDescription
+          - '/scalableTargetDimensions/'
+  ProdReourceIdPrefix:
+    Description: Prod ResourceId prefix for the resource to be registered in AWS Auto Scaling
+    Value:
+      !Join
+        - ''
+        - - 'https://'
+          - !Ref CustomResourceEndpoint
+          - '.execute-api.'
+          - !Ref "AWS::Region"
+          - '.amazonaws.com/'
+          - !Ref ProdStageDescription
+          - '/scalableTargetDimensions/'
