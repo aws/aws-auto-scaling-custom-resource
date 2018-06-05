@@ -260,6 +260,111 @@ Resources:
     Properties:
       Description: "Prod deployment for the scaling API that connects to an prod integration endpoint"
       RestApiId: !Ref CustomResourceEndpoint
+  LambdaServiceRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: "CustomResourceNotification-LambdaServiceRole"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        -
+          PolicyName: "APIGatewaySNSFullAccess"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "apigateway:*"
+                  - "sns:*"
+                Resource: "*"
+  SNSTOPIC:
+    Type: 'AWS::SNS::Topic'
+    Properties:
+      TopicName: "CustomResourceCertificateExpiryNotification"
+      Subscription:
+        - Endpoint: "nobody@amazon.com"
+          Protocol: "email"
+  LAMBDAFUNCTION:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Handler: "index.handler"
+      Role:
+        Fn::GetAtt:
+          - "LambdaServiceRole"
+          - "Arn"
+      Code:
+        ZipFile: |
+          import boto3
+          import sys
+          import datetime
+
+          def send_email(client, message, topic_name):
+            topics = client.list_topics()['Topics']
+            for topic in topics:
+              if topic_name in topic['TopicArn']:
+                client.publish(TopicArn=topic['TopicArn'], Message=message)
+                break
+
+          def handler(event, context):
+            sns_client = boto3.client('sns')
+            apigateway_client = boto3.client('apigateway')
+            rest_apis = apigateway_client.get_rest_apis()['items']
+            for rest_api in rest_apis:
+              stages = apigateway_client.get_stages(restApiId=rest_api['id'])['item']
+              for stage in stages:
+                if 'clientCertificateId' not in stage:
+                  print("There is no client certificate specified in stage {}".format(stage['stageName']))
+                else:
+                  client_certificate_id = stage['clientCertificateId']
+                  expiration_date = apigateway_client.get_client_certificate(clientCertificateId=client_certificate_id)['expirationDate']
+                  current_date = datetime.datetime.now(datetime.timezone.utc)
+                  diff_days = (expiration_date - current_date).days
+
+                  if diff_days in [1, 3, 7]:
+                    message = "Your client certificate {} is going to expired on {}. Please generate new certificate before the expiration date".format(client_certificate_id, expiration_date.astimezone(datetime.timezone.utc))
+                    send_email(sns_client, message, "CustomResourceCertificateExpiryNotification")
+      Runtime: "python3.6"
+      Timeout: "25"
+    DependsOn:
+      - PreProdStageDescription
+      - ProdStageDescription
+      - SNSTOPIC
+      - LambdaServiceRole
+  ScheduledRule:
+    Type: "AWS::Events::Rule"
+    Properties:
+      Description: "ScheduledRule"
+      ScheduleExpression: "rate(1 day)"
+      State: "ENABLED"
+      Targets:
+        -
+          Arn:
+            Fn::GetAtt:
+              - "LAMBDAFUNCTION"
+              - "Arn"
+          Id: "TargetFunctionV1"
+    DependsOn:
+      - LAMBDAFUNCTION
+  PermissionForEventsToInvokeLambda:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      FunctionName:
+        Ref: "LAMBDAFUNCTION"
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn:
+        Fn::GetAtt:
+          - "ScheduledRule"
+          - "Arn"
 Parameters:
   IntegrationHttpEndpoint:
     Type: String
