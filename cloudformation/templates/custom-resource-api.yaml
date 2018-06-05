@@ -260,6 +260,128 @@ Resources:
     Properties:
       Description: "Prod deployment for the scaling API that connects to an prod integration endpoint"
       RestApiId: !Ref CustomResourceEndpoint
+  LambdaServiceRole:
+  # This service role allows Lambda function to call API Gateway and SNS on your behalf to check client certificate
+  # and send you emails when it is going to expire in a short time
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: "CustomResourceNotification-LambdaServiceRole"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        -
+          PolicyName: "APIGatewaySNSFullAccess"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "apigateway:GET"
+                  - "sns:Publish"
+                  - "sns:ListTopics"
+                Resource: "*"
+  SNSTopic:
+    Type: 'AWS::SNS::Topic'
+    Properties:
+      TopicName: "CustomResourceCertificateExpiryNotification"
+      Subscription:
+        - Endpoint: !Ref SNSSubscriptionEmail
+          Protocol: "email"
+  LambdaFunction:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Handler: "index.handler"
+      Role:
+        Fn::GetAtt:
+          - "LambdaServiceRole"
+          - "Arn"
+      Code:
+        ZipFile: |
+          import boto3
+          import sys
+          import datetime
+
+          def list_topic_arns(client):
+              response = client.list_topics()
+              topic_arns = [topic['TopicArn'] for topic in response['Topics']]
+              while 'NextToken' in response:
+                  response = client.list_topics(NextToken=response['NextToken'])
+                  topic_arns += [topic_arn for _, topic_arn in response['Topics']]
+              return topic_arns
+
+          def get_topic_arn_by_name(client, topic_name):
+              topic_arn_list = list_topic_arns(client)
+              for topic_arn in topic_arn_list:
+                  if topic_arn.endswith(':'+topic_name):
+                      return topic_arn
+              return None
+
+          def send_email(client, message, topic_arn):
+            if topic_arn is not None:
+              client.publish(TopicArn=topic_arn, Message=message)
+
+          def handler(event, context):
+            sns_client = boto3.client('sns')
+            apigateway_client = boto3.client('apigateway')
+            rest_apis = apigateway_client.get_rest_apis()['items']
+            sns_topic_name = "CustomResourceCertificateExpiryNotification" # This topic name should be the same as what is used when creating the sns topic
+            topic_arn = get_topic_arn_by_name(sns_client, sns_topic_name)
+            for rest_api in rest_apis:
+              stages = apigateway_client.get_stages(restApiId=rest_api['id'])['item']
+              for stage in stages:
+                if 'clientCertificateId' not in stage:
+                  print("There is no client certificate created in stage {}".format(stage['stageName']))
+                else:
+                  client_certificate_id = stage['clientCertificateId']
+                  expiration_date = apigateway_client.get_client_certificate(clientCertificateId=client_certificate_id)['expirationDate']
+                  current_date = datetime.datetime.now(datetime.timezone.utc)
+                  diff_days = (expiration_date - current_date).days
+                  if diff_days in [1, 3, 7]: # Send customer notifications 1, 3 or 7 days before the expiration date
+                    message = "Your client certificate {} is going to expire on {}. Please generate a new certificate before the expiration date".format(client_certificate_id, expiration_date.astimezone(datetime.timezone.utc))
+                    send_email(sns_client, message, topic_arn)
+
+      Runtime: "python3.6"
+      Timeout: "25"
+    DependsOn:
+      - PreProdStageDescription
+      - ProdStageDescription
+      - SNSTopic
+      - LambdaServiceRole
+  ScheduledRule:
+    Type: "AWS::Events::Rule"
+    Properties:
+      Description: "ScheduledRule"
+      ScheduleExpression: "rate(1 day)"
+      State: "ENABLED"
+      Targets:
+        -
+          Arn:
+            Fn::GetAtt:
+              - "LambdaFunction"
+              - "Arn"
+          Id: "TargetFunctionV1"
+    DependsOn:
+      - LambdaFunction
+  PermissionForEventsToInvokeLambda:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      FunctionName:
+        Ref: "LambdaFunction"
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn:
+        Fn::GetAtt:
+          - "ScheduledRule"
+          - "Arn"
 Parameters:
   IntegrationHttpEndpoint:
     Type: String
@@ -268,6 +390,9 @@ Parameters:
     MinLength: 62    # http://a/scalableTargetDimensions/{scalableTargetDimensionId}
     MaxLength: 1600  # limit on length of resource id for Register API
     AllowedPattern: ^(https?:\/\/.*\/)scalableTargetDimensions\/\{scalableTargetDimensionId\}$
+  SNSSubscriptionEmail:
+    Type: String
+    Description: Email address to receive client certificate expiry notification
 Outputs:
   PreProdReourceIdPrefix:
     Description: Pre-prod ResourceId prefix for the resource to be registered in AWS Auto Scaling
