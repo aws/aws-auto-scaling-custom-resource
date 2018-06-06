@@ -225,7 +225,9 @@ Resources:
                 format: "double"
                 description: "The new desired capacity of the target"
   PreProdStageDescription:
-    DependsOn: PreProdClientCertificate
+    DependsOn:
+      - PreProdClientCertificate
+      - Account
     Type: "AWS::ApiGateway::Stage"
     Properties:
       DeploymentId: !Ref PreProdDeployment
@@ -240,7 +242,9 @@ Resources:
           MetricsEnabled: true
           DataTraceEnabled: true
   ProdStageDescription:
-    DependsOn: ProdClientCertificate
+    DependsOn:
+      - ProdClientCertificate
+      - Account
     Type: "AWS::ApiGateway::Stage"
     Properties:
       DeploymentId: !Ref ProdDeployment
