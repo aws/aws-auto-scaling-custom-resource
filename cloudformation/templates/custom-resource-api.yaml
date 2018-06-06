@@ -233,6 +233,12 @@ Resources:
       RestApiId: !Ref CustomResourceEndpoint
       StageName: "preprod"
       ClientCertificateId: !Ref PreProdClientCertificate
+      MethodSettings:
+        - HttpMethod: "*"
+          LoggingLevel: "INFO"
+          ResourcePath: "/*"
+          MetricsEnabled: true
+          DataTraceEnabled: true
   ProdStageDescription:
     DependsOn: ProdClientCertificate
     Type: "AWS::ApiGateway::Stage"
@@ -242,6 +248,12 @@ Resources:
       RestApiId: !Ref CustomResourceEndpoint
       StageName: "prod"
       ClientCertificateId: !Ref ProdClientCertificate
+      MethodSettings:
+        - HttpMethod: "*"
+          LoggingLevel: "ERROR"
+          ResourcePath: "/*"
+          MetricsEnabled: true
+          DataTraceEnabled: true
   PreProdClientCertificate:
     Type: "AWS::ApiGateway::ClientCertificate"
     Properties:
@@ -289,6 +301,64 @@ Resources:
                   - "sns:Publish"
                   - "sns:ListTopics"
                 Resource: "*"
+  AWSAutoScalingServiceRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: "AWSAutoScaling-ServiceRole"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "application-autoscaling.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        -
+          PolicyName: "APIGatewayInvokeAccess"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "execute-api:Invoke"
+                Resource: "*"
+        -
+          PolicyName: "CloudWatchAccess"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "cloudwatch:PutMetricAlarm"
+                  - "cloudwatch:DescribeAlarms"
+                  - "cloudwatch:DeleteAlarms"
+                Resource: "*"
+  CloudWatchRole:
+   Type: "AWS::IAM::Role"
+   Properties:
+    AssumeRolePolicyDocument:
+     Version: "2012-10-17"
+     Statement:
+      - Effect: Allow
+        Principal:
+         Service:
+          - "apigateway.amazonaws.com"
+        Action: "sts:AssumeRole"
+    Path: "/"
+    ManagedPolicyArns:
+     - "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+  Account:
+   Type: "AWS::ApiGateway::Account"
+   Properties:
+    CloudWatchRoleArn:
+     "Fn::GetAtt":
+      - CloudWatchRole
+      - Arn
   SNSTopic:
     Type: 'AWS::SNS::Topic'
     Properties:
@@ -299,6 +369,7 @@ Resources:
   LambdaFunction:
     Type: "AWS::Lambda::Function"
     Properties:
+      Description: "Certificate expiry notification lambda to be used for APIGateway Client Certificates"
       Handler: "index.handler"
       Role:
         Fn::GetAtt:
@@ -382,11 +453,51 @@ Resources:
         Fn::GetAtt:
           - "ScheduledRule"
           - "Arn"
+  S3Bucket:
+    DeletionPolicy: Retain
+    Type: "AWS::S3::Bucket"
+    Properties: {}
+  BucketPolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+      Bucket:
+        Ref: S3Bucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Sid: "AWSCloudTrailAclCheck"
+            Effect: "Allow"
+            Principal:
+              Service: "cloudtrail.amazonaws.com"
+            Action: "s3:GetBucketAcl"
+            Resource:
+              !Sub |-
+                arn:aws:s3:::${S3Bucket}
+          -
+            Sid: "AWSCloudTrailWrite"
+            Effect: "Allow"
+            Principal:
+              Service: "cloudtrail.amazonaws.com"
+            Action: "s3:PutObject"
+            Resource:
+              !Sub |-
+                arn:aws:s3:::${S3Bucket}/AWSLogs/${AWS::AccountId}/*
+            Condition:
+              StringEquals:
+                s3:x-amz-acl: "bucket-owner-full-control"
+  CustomResourceScalingTrail:
+    DependsOn:
+      - BucketPolicy
+    Type: "AWS::CloudTrail::Trail"
+    Properties:
+      S3BucketName:
+        Ref: S3Bucket
+      IsLogging: true
 Parameters:
   IntegrationHttpEndpoint:
     Type: String
     Description: Target service integration endpoint url
-    Default: "http://127.0.0.1:8080/v1/scalableTargetDimensions/{scalableTargetDimensionId}"
     MinLength: 62    # http://a/scalableTargetDimensions/{scalableTargetDimensionId}
     MaxLength: 1600  # limit on length of resource id for Register API
     AllowedPattern: ^(https?:\/\/.*\/)scalableTargetDimensions\/\{scalableTargetDimensionId\}$
@@ -394,6 +505,12 @@ Parameters:
     Type: String
     Description: Email address to receive client certificate expiry notification
 Outputs:
+  IAMRoleToBePassedToAwsAutoScaling:
+    Description: IAM Role to be passed to API calls to AWS Auto Scaling
+    Value:
+      Fn::GetAtt:
+        - "AWSAutoScalingServiceRole"
+        - "Arn"
   PreProdReourceIdPrefix:
     Description: Pre-prod ResourceId prefix for the resource to be registered in AWS Auto Scaling
     Value:
@@ -418,3 +535,6 @@ Outputs:
           - '.amazonaws.com/'
           - !Ref ProdStageDescription
           - '/scalableTargetDimensions/'
+  S3BucketName:
+      Value: !Ref S3Bucket
+      Description: Location of CloudTrail logs for Custom Resource scaling
