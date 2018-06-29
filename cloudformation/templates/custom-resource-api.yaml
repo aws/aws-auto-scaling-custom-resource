@@ -305,43 +305,6 @@ Resources:
                   - "sns:Publish"
                   - "sns:ListTopics"
                 Resource: "*"
-  AWSAutoScalingServiceRole:
-    Type: "AWS::IAM::Role"
-    Properties:
-      RoleName: "AWSAutoScaling-ServiceRole"
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          -
-            Effect: "Allow"
-            Principal:
-              Service:
-                - "application-autoscaling.amazonaws.com"
-            Action:
-              - "sts:AssumeRole"
-      Policies:
-        -
-          PolicyName: "APIGatewayInvokeAccess"
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              -
-                Effect: "Allow"
-                Action:
-                  - "execute-api:Invoke"
-                Resource: "*"
-        -
-          PolicyName: "CloudWatchAccess"
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              -
-                Effect: "Allow"
-                Action:
-                  - "cloudwatch:PutMetricAlarm"
-                  - "cloudwatch:DescribeAlarms"
-                  - "cloudwatch:DeleteAlarms"
-                Resource: "*"
   CloudWatchRole:
    Type: "AWS::IAM::Role"
    Properties:
@@ -509,36 +472,16 @@ Parameters:
     Type: String
     Description: Email address to receive client certificate expiry notification
 Outputs:
-  IAMRoleToBePassedToAwsAutoScaling:
-    Description: IAM Role to be passed to API calls to AWS Auto Scaling
-    Value:
-      Fn::GetAtt:
-        - "AWSAutoScalingServiceRole"
-        - "Arn"
   PreProdReourceIdPrefix:
     Description: Pre-prod ResourceId prefix for the resource to be registered in AWS Auto Scaling
     Value:
-      !Join
-        - ''
-        - - 'https://'
-          - !Ref CustomResourceEndpoint
-          - '.execute-api.'
-          - !Ref "AWS::Region"
-          - '.amazonaws.com/'
-          - !Ref PreProdStageDescription
-          - '/scalableTargetDimensions/'
+      !Sub |-
+        https://${CustomResourceEndpoint}.execute-api.${AWS::Region}.amazonaws.com/${PreProdStageDescription}/scalableTargetDimensions/
   ProdReourceIdPrefix:
     Description: Prod ResourceId prefix for the resource to be registered in AWS Auto Scaling
     Value:
-      !Join
-        - ''
-        - - 'https://'
-          - !Ref CustomResourceEndpoint
-          - '.execute-api.'
-          - !Ref "AWS::Region"
-          - '.amazonaws.com/'
-          - !Ref ProdStageDescription
-          - '/scalableTargetDimensions/'
+      !Sub |-
+        https://${CustomResourceEndpoint}.execute-api.${AWS::Region}.amazonaws.com/${ProdStageDescription}/scalableTargetDimensions/
   S3BucketName:
       Value: !Ref S3Bucket
       Description: Location of CloudTrail logs for Custom Resource scaling
