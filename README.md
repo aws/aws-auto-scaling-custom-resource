@@ -8,20 +8,25 @@ Libraries, samples and tools to help AWS Customers to onboard with Custom Resour
 
 ### Parameters
 
-IntegrationHttpEndpoint : customer's endpoint
+1. IntegrationHttpEndpoint: customer's endpoint
+1. SNSSubscriptionEmail: email address to send client certificate expiry notifications to
 
-SNSSubscriptionEmail : email address to send client certificate expiry notifications to
+### Outputs
+
+1. PreProdReourceIdPrefix: Pre-prod ResourceId prefix for the resource to be registered in AWS Auto Scaling
+1. ProdReourceIdPrefix: Prod ResourceId prefix for the resource to be registered in AWS Auto Scaling
+1. S3BucketName: S3 bucket where cloud trails are stored
 
 ### Example
 
 ```bash
 aws cloudformation create-stack \
-    --stack-name MyCustomResourceAPIGatewayStack \
-    --template-body file:///Volumes/Unix/aws-auto-scaling-custom-resource/cloudformation/templates/custom-resource-api.yaml \ 
+    --stack-name CustomResourceStack \
+    --template-body file:///home/user/custom-resource-api.yaml \
     --region us-west-2 \
     --capabilities CAPABILITY_NAMED_IAM CAPABILITY_IAM \
     --parameters \
-        ParameterKey=SNSSubscriptionEmail,ParameterValue="amznhang@amazon.com" \
+        ParameterKey=SNSSubscriptionEmail,ParameterValue="your.email@id" \
         ParameterKey=IntegrationHttpEndpoint,ParameterValue='"https://abc.com/scalableTargetDimensions/{scalableTargetDimensionId}"'
 ```
 
