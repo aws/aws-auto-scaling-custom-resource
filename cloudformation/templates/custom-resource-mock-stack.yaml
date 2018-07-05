@@ -1,6 +1,26 @@
+#
+# Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this
+# software and associated documentation files (the "Software"), to deal in the Software
+# without restriction, including without limitation the rights to use, copy, modify,
+# merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+# INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+# PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#
 AWSTemplateFormatVersion: 2010-09-09
 Resources:
   CustomResourceEndpoint:
+    DependsOn:
+      - LambdaFunction
+      - CloudWatchRole
+      - CustomResourceScalingTrail
     Type: 'AWS::ApiGateway::RestApi'
     Properties:
       Name: Custom Resource Scaling API
@@ -65,9 +85,12 @@ Resources:
               security:
               - sigv4: []
               x-amazon-apigateway-integration:
-                uri: !Ref IntegrationHttpEndpoint
+                type: aws_proxy
+                uri:
+                  !Sub |-
+                    arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaFunction.Arn}/invocations
                 passthroughBehavior: "when_no_match"
-                httpMethod: "GET"
+                httpMethod: "POST"
                 responses:
                   default:
                     statusCode: "500"
@@ -83,7 +106,6 @@ Resources:
                     statusCode: "400"
                 requestParameters:
                   integration.request.path.scalableTargetDimensionId: "method.request.path.scalableTargetDimensionId"
-                type: "http"
             patch:
               tags:
               - "ScalableTargets"
@@ -134,9 +156,12 @@ Resources:
               security:
               - sigv4: []
               x-amazon-apigateway-integration:
-                uri: !Ref IntegrationHttpEndpoint
+                type: aws_proxy
+                uri:
+                  !Sub |-
+                    arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaFunction.Arn}/invocations
                 passthroughBehavior: "when_no_match"
-                httpMethod: "PATCH"
+                httpMethod: "POST"
                 responses:
                   default:
                     statusCode: "500"
@@ -152,7 +177,6 @@ Resources:
                     statusCode: "400"
                 requestParameters:
                   integration.request.path.scalableTargetDimensionId: "method.request.path.scalableTargetDimensionId"
-                type: "http"
         securityDefinitions:
           sigv4:
             type: "apiKey"
@@ -224,64 +248,45 @@ Resources:
                 type: "number"
                 format: "double"
                 description: "The new desired capacity of the target"
-  PreProdStageDescription:
-    DependsOn:
-      - PreProdClientCertificate
-      - Account
-    Type: "AWS::ApiGateway::Stage"
-    Properties:
-      DeploymentId: !Ref PreProdDeployment
-      Description: "Pre-prod stage"
-      RestApiId: !Ref CustomResourceEndpoint
-      StageName: "preprod"
-      ClientCertificateId: !Ref PreProdClientCertificate
-      MethodSettings:
-        - HttpMethod: "*"
-          LoggingLevel: "INFO"
-          ResourcePath: "/*"
-          MetricsEnabled: true
-          DataTraceEnabled: true
   ProdStageDescription:
-    DependsOn:
-      - ProdClientCertificate
-      - Account
     Type: "AWS::ApiGateway::Stage"
     Properties:
       DeploymentId: !Ref ProdDeployment
       Description: "Prod stage"
       RestApiId: !Ref CustomResourceEndpoint
       StageName: "prod"
-      ClientCertificateId: !Ref ProdClientCertificate
       MethodSettings:
         - HttpMethod: "*"
-          LoggingLevel: "ERROR"
+          LoggingLevel: "INFO"
           ResourcePath: "/*"
           MetricsEnabled: true
           DataTraceEnabled: true
-  PreProdClientCertificate:
-    Type: "AWS::ApiGateway::ClientCertificate"
-    Properties:
-      Description: "Pre-prod client certificate"
-  ProdClientCertificate:
-    Type: "AWS::ApiGateway::ClientCertificate"
-    Properties:
-      Description: "Prod client certificate"
-  PreProdDeployment:
-    Type: "AWS::ApiGateway::Deployment"
-    Properties:
-      Description: "Pre-prod deployment for the scaling API that connects to an pre-prod integration endpoint"
-      RestApiId: !Ref CustomResourceEndpoint
   ProdDeployment:
     Type: "AWS::ApiGateway::Deployment"
     Properties:
       Description: "Prod deployment for the scaling API that connects to an prod integration endpoint"
       RestApiId: !Ref CustomResourceEndpoint
+  CustomResourceDDBTable:
+    Type: "AWS::DynamoDB::Table"
+    Properties:
+      AttributeDefinitions:
+        -
+          AttributeName: "scalableTargetDimensionId"
+          AttributeType: "S"
+      KeySchema:
+        -
+          AttributeName: "scalableTargetDimensionId"
+          KeyType: "HASH"
+      ProvisionedThroughput:
+        ReadCapacityUnits: "5"
+        WriteCapacityUnits: "5"
+      TableName: "CustomScalableTargets"
   LambdaServiceRole:
-  # This service role allows Lambda function to call API Gateway and SNS on your behalf to check client certificate
-  # and send you emails when it is going to expire in a short time
+    DependsOn: Account
+    # This service role allows Lambda function to call DDB and CloudWatch
     Type: "AWS::IAM::Role"
     Properties:
-      RoleName: "CustomResourceNotification-LambdaServiceRole"
+      RoleName: "CustomResource-LambdaServiceRole"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -294,17 +299,41 @@ Resources:
               - "sts:AssumeRole"
       Policies:
         -
-          PolicyName: "APIGatewaySNSFullAccess"
+          PolicyName: "LambdaDDBAccess"
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
               -
                 Effect: "Allow"
                 Action:
-                  - "apigateway:GET"
-                  - "sns:Publish"
-                  - "sns:ListTopics"
-                Resource: "*"
+                  - "dynamodb:DeleteItem"
+                  - "dynamodb:GetItem"
+                  - "dynamodb:PutItem"
+                  - "dynamodb:Scan"
+                  - "dynamodb:UpdateItem"
+                Resource: ## substitute table name here
+                  !Sub |-
+                    arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${CustomResourceDDBTable}
+        -
+          PolicyName: "LambdaLogAccess"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "logs:CreateLogGroup"
+                Resource:
+                  !Sub |-
+                    arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+              -
+                Effect: "Allow"
+                Action:
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource:
+                  !Sub |-
+                    arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*:*
   CloudWatchRole:
    Type: "AWS::IAM::Role"
    Properties:
@@ -326,100 +355,135 @@ Resources:
      "Fn::GetAtt":
       - CloudWatchRole
       - Arn
-  SNSTopic:
-    Type: 'AWS::SNS::Topic'
-    Properties:
-      TopicName: "CustomResourceCertificateExpiryNotification"
-      Subscription:
-        - Endpoint: !Ref SNSSubscriptionEmail
-          Protocol: "email"
   LambdaFunction:
     Type: "AWS::Lambda::Function"
     Properties:
-      Description: "Certificate expiry notification lambda to be used for APIGateway Client Certificates"
-      Handler: "index.handler"
+      Description: "Mock custom resource capacity service"
+      Handler: "index.lambda_handler"
       Role:
         Fn::GetAtt:
           - "LambdaServiceRole"
           - "Arn"
       Code:
         ZipFile: |
+          import os
           import boto3
-          import sys
-          import datetime
+          import json
+          from pprint import pformat
 
-          def list_topic_arns(client):
-              response = client.list_topics()
-              topic_arns = [topic['TopicArn'] for topic in response['Topics']]
-              while 'NextToken' in response:
-                  response = client.list_topics(NextToken=response['NextToken'])
-                  topic_arns += [topic_arn for _, topic_arn in response['Topics']]
-              return topic_arns
+          FILE_NAME = os.path.basename(__file__)
+          DDB_TABLE_NAME = 'CustomScalableTargets'
+          DDB_TABLE_KEY_NAME = 'scalableTargetDimensionId'
+          DDB_TABLE_ATTR_SCALING_STATUS = 'scalingStatus'
+          DDB_TABLE_ATTR_ACTUAL_CAPACITY = 'actualCapacity'
+          DDB_TABLE_ATTR_DESIRED_CAPACITY = 'desiredCapacity'
+          SCALING_STATUS_PENDING = 'Pending'
+          SCALING_STATUS_INPROGRESS = 'InProgress'
+          SCALING_STATUS_SUCCESSFUL = 'Successful'
+          HTTP_OK = '200'
+          HTTP_BAD_REQUEST = '400'
 
-          def get_topic_arn_by_name(client, topic_name):
-              topic_arn_list = list_topic_arns(client)
-              for topic_arn in topic_arn_list:
-                  if topic_arn.endswith(':'+topic_name):
-                      return topic_arn
-              return None
+          def __print(log):
+              print('[' + FILE_NAME + '] ' + log)
 
-          def send_email(client, message, topic_arn):
-            if topic_arn is not None:
-              client.publish(TopicArn=topic_arn, Message=message)
+          __print('Starting lambda_handler')
+          dynamodb = boto3.resource('dynamodb')
+          table = dynamodb.Table(DDB_TABLE_NAME)
 
-          def handler(event, context):
-            sns_client = boto3.client('sns')
-            apigateway_client = boto3.client('apigateway')
-            rest_apis = apigateway_client.get_rest_apis()['items']
-            sns_topic_name = "CustomResourceCertificateExpiryNotification" # This topic name should be the same as what is used when creating the sns topic
-            topic_arn = get_topic_arn_by_name(sns_client, sns_topic_name)
-            for rest_api in rest_apis:
-              stages = apigateway_client.get_stages(restApiId=rest_api['id'])['item']
-              for stage in stages:
-                if 'clientCertificateId' not in stage:
-                  print("There is no client certificate created in stage {}".format(stage['stageName']))
-                else:
-                  client_certificate_id = stage['clientCertificateId']
-                  expiration_date = apigateway_client.get_client_certificate(clientCertificateId=client_certificate_id)['expirationDate']
-                  current_date = datetime.datetime.now(datetime.timezone.utc)
-                  diff_days = (expiration_date - current_date).days
-                  if diff_days in [1, 3, 7]: # Send customer notifications 1, 3 or 7 days before the expiration date
-                    message = "Your client certificate {} is going to expire on {}. Please generate a new certificate before the expiration date".format(client_certificate_id, expiration_date.astimezone(datetime.timezone.utc))
-                    send_email(sns_client, message, topic_arn)
+          def respond(err_message, res=None):
+              return {
+                  'statusCode': HTTP_BAD_REQUEST if err_message else HTTP_OK,
+                  'body': err_message if err_message else json.dumps(res),
+                  'headers': {
+                      'Content-Type': 'application/json',
+                  },
+              }
 
+          def get(table, scalable_target_dimension_id):
+              __print("Calling get for scalable_target_dimension_id: " + scalable_target_dimension_id)
+              item = table.get_item(Key={DDB_TABLE_KEY_NAME: scalable_target_dimension_id})['Item']
+              if item[DDB_TABLE_ATTR_SCALING_STATUS] in {SCALING_STATUS_PENDING, SCALING_STATUS_INPROGRESS}:
+                  actual_capacity = float(item[DDB_TABLE_ATTR_ACTUAL_CAPACITY])
+                  desired_capacity = float(item[DDB_TABLE_ATTR_DESIRED_CAPACITY])
+                  if desired_capacity > actual_capacity:
+                      patch(table, scalable_target_dimension_id, actual_capacity + min(1, desired_capacity - actual_capacity), SCALING_STATUS_INPROGRESS, False)
+                  elif desired_capacity < actual_capacity:
+                      patch(table, scalable_target_dimension_id, actual_capacity - min(1, actual_capacity - desired_capacity), SCALING_STATUS_INPROGRESS, False)
+                  else:
+                      #  update status to Successful
+                      patch(table, scalable_target_dimension_id, actual_capacity, SCALING_STATUS_SUCCESSFUL, False)
+
+              return item
+
+          def patch(table, scalable_target_dimension_id, capacity, scaling_status=None, is_updating_desired=True):
+              capacity_field_name = DDB_TABLE_ATTR_DESIRED_CAPACITY if is_updating_desired else "actualCapacity"
+              __print("Calling patch for scalable_target_dimension_id: " + scalable_target_dimension_id
+                    + " with " + capacity_field_name + ": " + str(capacity))
+              response = table.update_item(
+                  Key={DDB_TABLE_KEY_NAME: scalable_target_dimension_id},
+                  UpdateExpression="set " + capacity_field_name + " = :d, " + DDB_TABLE_ATTR_SCALING_STATUS + " = :s",
+                  ExpressionAttributeValues={':d': str(capacity), ':s': scaling_status if scaling_status else SCALING_STATUS_PENDING},
+                  ReturnValues="ALL_NEW")
+              return response['Attributes']
+
+          def lambda_handler(event, context):
+              __print("Received event: " + json.dumps(event, indent=2))
+
+              operations = {
+                  'GET': get,
+                  'PATCH': patch
+              }
+
+              operation = event['httpMethod']
+              if operation in operations:
+                  __print("received Id: " + event['pathParameters']['scalableTargetDimensionId'])
+                  scalable_target_dimension_id = event['pathParameters']['scalableTargetDimensionId']
+                  error_message = None
+                  response = None
+                  if operation == 'GET':
+                      response = operations[operation](table, scalable_target_dimension_id)
+                  else:  # PATCH
+                      body_json = json.loads(event['body'])
+                      desired_capacity = body_json['desiredCapacity']
+                      if desired_capacity < 0:
+                          error_message = 'Illegal desired capacity {}'.format(str(desired_capacity))
+                      else:
+                          response = operations[operation](table, scalable_target_dimension_id, desired_capacity)
+
+                  __print(pformat(error_message)) if error_message else __print(pformat(response))
+
+                  return respond(error_message, response)
+              else:
+                  return respond('Unsupported method "{}"'.format(operation))
       Runtime: "python3.6"
       Timeout: "25"
     DependsOn:
-      - PreProdStageDescription
-      - ProdStageDescription
-      - SNSTopic
       - LambdaServiceRole
-  ScheduledRule:
-    Type: "AWS::Events::Rule"
+      - CustomResourceDDBTable
+  LambdaInvokeGETPermission: # Grant APIGateway access to invoke this lambda function
+    DependsOn: LambdaFunction
+    Type: 'AWS::Lambda::Permission'
     Properties:
-      Description: "ScheduledRule"
-      ScheduleExpression: "rate(1 day)"
-      State: "ENABLED"
-      Targets:
-        -
-          Arn:
-            Fn::GetAtt:
-              - "LambdaFunction"
-              - "Arn"
-          Id: "TargetFunctionV1"
-    DependsOn:
-      - LambdaFunction
-  PermissionForEventsToInvokeLambda:
-    Type: "AWS::Lambda::Permission"
+      FunctionName: !GetAtt
+        - LambdaFunction
+        - Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: apigateway.amazonaws.com
+      SourceArn: # arn:aws:execute-api:region:account-id:api-id/stage/method/resource-path
+        !Sub |-
+          arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${CustomResourceEndpoint}/*/GET/scalableTargetDimensions/{scalableTargetDimensionId}
+  LambdaInvokePATCHPermission: # Grant APIGateway access to invoke this lambda function
+    DependsOn: LambdaFunction
+    Type: 'AWS::Lambda::Permission'
     Properties:
-      FunctionName:
-        Ref: "LambdaFunction"
-      Action: "lambda:InvokeFunction"
-      Principal: "events.amazonaws.com"
-      SourceArn:
-        Fn::GetAtt:
-          - "ScheduledRule"
-          - "Arn"
+      FunctionName: !GetAtt
+        - LambdaFunction
+        - Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: apigateway.amazonaws.com
+      SourceArn: # arn:aws:execute-api:region:account-id:api-id/stage/method/resource-path
+        !Sub |-
+          arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${CustomResourceEndpoint}/*/PATCH/scalableTargetDimensions/{scalableTargetDimensionId}
   S3Bucket:
     DeletionPolicy: Retain
     Type: "AWS::S3::Bucket"
@@ -461,22 +525,7 @@ Resources:
       S3BucketName:
         Ref: S3Bucket
       IsLogging: true
-Parameters:
-  IntegrationHttpEndpoint:
-    Type: String
-    Description: Target service integration endpoint url
-    MinLength: 62    # http://a/scalableTargetDimensions/{scalableTargetDimensionId}
-    MaxLength: 1600  # limit on length of resource id for Register API
-    AllowedPattern: ^(https?:\/\/.*\/)scalableTargetDimensions\/\{scalableTargetDimensionId\}$
-  SNSSubscriptionEmail:
-    Type: String
-    Description: Email address to receive client certificate expiry notification
 Outputs:
-  PreProdReourceIdPrefix:
-    Description: Pre-prod ResourceId prefix for the resource to be registered in AWS Auto Scaling
-    Value:
-      !Sub |-
-        https://${CustomResourceEndpoint}.execute-api.${AWS::Region}.amazonaws.com/${PreProdStageDescription}/scalableTargetDimensions/
   ProdReourceIdPrefix:
     Description: Prod ResourceId prefix for the resource to be registered in AWS Auto Scaling
     Value:
