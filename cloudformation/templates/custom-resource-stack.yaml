@@ -1,0 +1,503 @@
+#
+# Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this
+# software and associated documentation files (the "Software"), to deal in the Software
+# without restriction, including without limitation the rights to use, copy, modify,
+# merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+# INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+# PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  CustomResourceEndpoint:
+    Type: 'AWS::ApiGateway::RestApi'
+    Properties:
+      Name: Custom Resource Scaling API
+      Description: API for Custom Resource Management. This is to be utilized by AWS AutoScaling.
+      Body:
+        swagger: "2.0"
+        info:
+          description: "Scaling API through API Gateway"
+          version: "1.0.0"
+          title: "Scaling API"
+          license:
+            name: MIT-0
+            url: https://spdx.org/licenses/MIT-0.html
+          basePath: "/v1"
+          schemes:
+           - "http"
+          produces:
+           - "application/json"
+        paths:
+          /scalableTargetDimensions/{scalableTargetDimensionId}:
+            get:
+              tags:
+              - "ScalableTargets"
+              summary: "Describe target"
+              description: "The scalableTargetDimensions endpoint returns information about the registered \
+             ScalableTargetDimension, including the desired and actual capacity."
+              operationId: "controllers.default_controller.scalable_target_id_get"
+              parameters:
+              - name: "scalableTargetDimensionId"
+                in: "path"
+                description: "Id of ScalableTargetDimension to describe."
+                required: true
+                type: "string"
+                format: ""
+              responses:
+                '200':
+                  description: "JSON description of the ScalableTargetDimension"
+                  schema:
+                    '$ref': "#/definitions/ScalableTargetDimension"
+                '400':
+                  description: "Client Error"
+                  schema:
+                    '$ref': "#/definitions/Error"
+                '403':
+                  description: "Client Error: Not authorized"
+                  schema:
+                    '$ref': "#/definitions/Error"
+                '404':
+                  description: "Client Error: ScalableTargetDimension not found"
+                  schema:
+                    '$ref': "#/definitions/Error"
+                '429':
+                  description: "Client Error: Too Many Requests"
+                  schema:
+                    '$ref': "#/definitions/Error"
+                '500':
+                  description: "Server Error"
+                  schema:
+                    '$ref': "#/definitions/Error"
+              x-tags:
+              - tag: "ScalableTargets"
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                uri: !Ref IntegrationHttpEndpoint
+                passthroughBehavior: "when_no_match"
+                httpMethod: "GET"
+                responses:
+                  default:
+                    statusCode: "500"
+                  '200':
+                    statusCode: "200"
+                  '403':
+                    statusCode: "403"
+                  '404':
+                    statusCode: "404"
+                  '429':
+                    statusCode: "429"
+                  '4\d{2}':
+                    statusCode: "400"
+                requestParameters:
+                  integration.request.path.scalableTargetDimensionId: "method.request.path.scalableTargetDimensionId"
+                type: "http"
+            patch:
+              tags:
+              - "ScalableTargets"
+              summary: "Update ScalableTargetDimension"
+              operationId: "controllers.default_controller.scalable_target_id_patch"
+              consumes:
+              - "application/json"
+              parameters:
+              - name: "scalableTargetDimensionId"
+                in: "path"
+                description: "Id of ScalableTargetDimension to update."
+                required: true
+                type: "string"
+                format: ""
+              - in: "body"
+                name: "updateRequest"
+                description: "The updateRequest contains a description of how the ScalableTargetDimension should be updated"
+                required: true
+                schema:
+                  '$ref': "#/definitions/ScalableTargetDimensionUpdate"
+              responses:
+                '200':
+                  description: "JSON description of ScalableTargetDimension"
+                  schema:
+                    '$ref': "#/definitions/ScalableTargetDimension"
+                '400':
+                  description: "Client Error"
+                  schema:
+                    '$ref': "#/definitions/Error"
+                '403':
+                  description: "Client Error: Not authorized"
+                  schema:
+                    '$ref': "#/definitions/Error"
+                '404':
+                  description: "Client Error: ScalableTargetDimension not found"
+                  schema:
+                    '$ref': "#/definitions/Error"
+                '429':
+                  description: "Client Error: Too Many Requests"
+                  schema:
+                    '$ref': "#/definitions/Error"
+                '500':
+                  description: "Server Error"
+                  schema:
+                    '$ref': "#/definitions/Error"
+              x-tags:
+              - tag: "ScalableTargets"
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                uri: !Ref IntegrationHttpEndpoint
+                passthroughBehavior: "when_no_match"
+                httpMethod: "PATCH"
+                responses:
+                  default:
+                    statusCode: "500"
+                  '200':
+                    statusCode: "200"
+                  '403':
+                    statusCode: "403"
+                  '404':
+                    statusCode: "404"
+                  '429':
+                    statusCode: "429"
+                  '4\d{2}':
+                    statusCode: "400"
+                requestParameters:
+                  integration.request.path.scalableTargetDimensionId: "method.request.path.scalableTargetDimensionId"
+                type: "http"
+        securityDefinitions:
+          sigv4:
+            type: "apiKey"
+            name: "Authorization"
+            in: "header"
+            x-amazon-apigateway-authtype: "awsSigv4"
+        definitions:
+          Error:
+            type: "object"
+            properties:
+              message:
+                type: "string"
+          ScalableTargetDimension:
+            description: "A ScalableTargetDimension is a resource that represents the scaling state for a single dimension \
+           of a scalable target"
+            type: "object"
+            required:
+            - "actualCapacity"
+            - "desiredCapacity"
+            - "scalableTargetDimensionId"
+            - "scalingStatus"
+            - "version"
+            properties:
+              scalableTargetDimensionId:
+                type: "string"
+                format: ""
+                description: "Unique identifier representing a specific ScalableTargetDimension."
+              version:
+                type: "string"
+                format: ""
+                description: "Version of the specific ScalableTargetDimension. It is useful in avoiding scaling action taken \
+                on unregistered version of the ScalableTargetDimension"
+              actualCapacity:
+                type: "number"
+                format: "double"
+                description: "The actual capacity of the ScalableTargetDimension"
+              desiredCapacity:
+                type: "number"
+                format: "double"
+                description: "The desired capacity of the ScalableTargetDimension"
+              scalingStatus:
+                type: "string"
+                format: ""
+                description: "current status of scaling activity"
+                enum:
+                - "Pending" # scaling action has not yet begun
+                - "InProgress" # scaling action is in progress
+                - "Successful" # last scaling action was successful
+                - "Failed" # last scaling action has failed
+              resourceName:
+                type: "string"
+                format: ""
+                description: "Optional user friendly name representing a specific Resource."
+              dimensionName:
+                type: "string"
+                format: ""
+                description: "Optional user friendly name representing a dimension of the resource to be scaled."
+              failureReason:
+                type: "string"
+                format: ""
+                description: "Optional failure reason that should be provided if the scaling action failed"
+          ScalableTargetDimensionUpdate:
+            description: "An update to be applied to the ScalableTargetDimension"
+            type: "object"
+            required:
+            - "desiredCapacity"
+            properties:
+              desiredCapacity:
+                type: "number"
+                format: "double"
+                description: "The new desired capacity of the target"
+  PreProdStageDescription:
+    DependsOn:
+      - PreProdClientCertificate
+      - Account
+    Type: "AWS::ApiGateway::Stage"
+    Properties:
+      DeploymentId: !Ref PreProdDeployment
+      Description: "Pre-prod stage"
+      RestApiId: !Ref CustomResourceEndpoint
+      StageName: "preprod"
+      ClientCertificateId: !Ref PreProdClientCertificate
+      MethodSettings:
+        - HttpMethod: "*"
+          LoggingLevel: "INFO"
+          ResourcePath: "/*"
+          MetricsEnabled: true
+          DataTraceEnabled: true
+  ProdStageDescription:
+    DependsOn:
+      - ProdClientCertificate
+      - Account
+    Type: "AWS::ApiGateway::Stage"
+    Properties:
+      DeploymentId: !Ref ProdDeployment
+      Description: "Prod stage"
+      RestApiId: !Ref CustomResourceEndpoint
+      StageName: "prod"
+      ClientCertificateId: !Ref ProdClientCertificate
+      MethodSettings:
+        - HttpMethod: "*"
+          LoggingLevel: "ERROR"
+          ResourcePath: "/*"
+          MetricsEnabled: true
+          DataTraceEnabled: true
+  PreProdClientCertificate:
+    Type: "AWS::ApiGateway::ClientCertificate"
+    Properties:
+      Description: "Pre-prod client certificate"
+  ProdClientCertificate:
+    Type: "AWS::ApiGateway::ClientCertificate"
+    Properties:
+      Description: "Prod client certificate"
+  PreProdDeployment:
+    Type: "AWS::ApiGateway::Deployment"
+    Properties:
+      Description: "Pre-prod deployment for the scaling API that connects to an pre-prod integration endpoint"
+      RestApiId: !Ref CustomResourceEndpoint
+  ProdDeployment:
+    Type: "AWS::ApiGateway::Deployment"
+    Properties:
+      Description: "Prod deployment for the scaling API that connects to an prod integration endpoint"
+      RestApiId: !Ref CustomResourceEndpoint
+  LambdaServiceRole:
+  # This service role allows Lambda function to call API Gateway and SNS on your behalf to check client certificate
+  # and send you emails when it is going to expire in a short time
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: "CustomResourceNotification-LambdaServiceRole"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        -
+          PolicyName: "APIGatewaySNSFullAccess"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "apigateway:GET"
+                  - "sns:Publish"
+                  - "sns:ListTopics"
+                Resource: "*"
+  CloudWatchRole:
+   Type: "AWS::IAM::Role"
+   Properties:
+    AssumeRolePolicyDocument:
+     Version: "2012-10-17"
+     Statement:
+      - Effect: Allow
+        Principal:
+         Service:
+          - "apigateway.amazonaws.com"
+        Action: "sts:AssumeRole"
+    Path: "/"
+    ManagedPolicyArns:
+     - "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+  Account:
+   Type: "AWS::ApiGateway::Account"
+   Properties:
+    CloudWatchRoleArn:
+     "Fn::GetAtt":
+      - CloudWatchRole
+      - Arn
+  SNSTopic:
+    Type: 'AWS::SNS::Topic'
+    Properties:
+      TopicName: "CustomResourceCertificateExpiryNotification"
+      Subscription:
+        - Endpoint: !Ref SNSSubscriptionEmail
+          Protocol: "email"
+  LambdaFunction:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Description: "Certificate expiry notification lambda to be used for APIGateway Client Certificates"
+      Handler: "index.handler"
+      Role:
+        Fn::GetAtt:
+          - "LambdaServiceRole"
+          - "Arn"
+      Code:
+        ZipFile: |
+          import boto3
+          import sys
+          import datetime
+
+          def list_topic_arns(client):
+              response = client.list_topics()
+              topic_arns = [topic['TopicArn'] for topic in response['Topics']]
+              while 'NextToken' in response:
+                  response = client.list_topics(NextToken=response['NextToken'])
+                  topic_arns += [topic_arn for _, topic_arn in response['Topics']]
+              return topic_arns
+
+          def get_topic_arn_by_name(client, topic_name):
+              topic_arn_list = list_topic_arns(client)
+              for topic_arn in topic_arn_list:
+                  if topic_arn.endswith(':'+topic_name):
+                      return topic_arn
+              return None
+
+          def send_email(client, message, topic_arn):
+            if topic_arn is not None:
+              client.publish(TopicArn=topic_arn, Message=message)
+
+          def handler(event, context):
+            sns_client = boto3.client('sns')
+            apigateway_client = boto3.client('apigateway')
+            rest_apis = apigateway_client.get_rest_apis()['items']
+            sns_topic_name = "CustomResourceCertificateExpiryNotification" # This topic name should be the same as what is used when creating the sns topic
+            topic_arn = get_topic_arn_by_name(sns_client, sns_topic_name)
+            for rest_api in rest_apis:
+              stages = apigateway_client.get_stages(restApiId=rest_api['id'])['item']
+              for stage in stages:
+                if 'clientCertificateId' not in stage:
+                  print("There is no client certificate created in stage {}".format(stage['stageName']))
+                else:
+                  client_certificate_id = stage['clientCertificateId']
+                  expiration_date = apigateway_client.get_client_certificate(clientCertificateId=client_certificate_id)['expirationDate']
+                  current_date = datetime.datetime.now(datetime.timezone.utc)
+                  diff_days = (expiration_date - current_date).days
+                  if diff_days in [1, 3, 7]: # Send customer notifications 1, 3 or 7 days before the expiration date
+                    message = "Your client certificate {} is going to expire on {}. Please generate a new certificate before the expiration date".format(client_certificate_id, expiration_date.astimezone(datetime.timezone.utc))
+                    send_email(sns_client, message, topic_arn)
+
+      Runtime: "python3.6"
+      Timeout: "25"
+    DependsOn:
+      - PreProdStageDescription
+      - ProdStageDescription
+      - SNSTopic
+      - LambdaServiceRole
+  ScheduledRule:
+    Type: "AWS::Events::Rule"
+    Properties:
+      Description: "ScheduledRule"
+      ScheduleExpression: "rate(1 day)"
+      State: "ENABLED"
+      Targets:
+        -
+          Arn:
+            Fn::GetAtt:
+              - "LambdaFunction"
+              - "Arn"
+          Id: "TargetFunctionV1"
+    DependsOn:
+      - LambdaFunction
+  PermissionForEventsToInvokeLambda:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      FunctionName:
+        Ref: "LambdaFunction"
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn:
+        Fn::GetAtt:
+          - "ScheduledRule"
+          - "Arn"
+  S3Bucket:
+    DeletionPolicy: Retain
+    Type: "AWS::S3::Bucket"
+    Properties: {}
+  BucketPolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+      Bucket:
+        Ref: S3Bucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Sid: "AWSCloudTrailAclCheck"
+            Effect: "Allow"
+            Principal:
+              Service: "cloudtrail.amazonaws.com"
+            Action: "s3:GetBucketAcl"
+            Resource:
+              !Sub |-
+                arn:aws:s3:::${S3Bucket}
+          -
+            Sid: "AWSCloudTrailWrite"
+            Effect: "Allow"
+            Principal:
+              Service: "cloudtrail.amazonaws.com"
+            Action: "s3:PutObject"
+            Resource:
+              !Sub |-
+                arn:aws:s3:::${S3Bucket}/AWSLogs/${AWS::AccountId}/*
+            Condition:
+              StringEquals:
+                s3:x-amz-acl: "bucket-owner-full-control"
+  CustomResourceScalingTrail:
+    DependsOn:
+      - BucketPolicy
+    Type: "AWS::CloudTrail::Trail"
+    Properties:
+      S3BucketName:
+        Ref: S3Bucket
+      IsLogging: true
+Parameters:
+  IntegrationHttpEndpoint:
+    Type: String
+    Description: Target service integration endpoint url
+    MinLength: 62    # http://a/scalableTargetDimensions/{scalableTargetDimensionId}
+    MaxLength: 1600  # limit on length of resource id for Register API
+    AllowedPattern: ^(https?:\/\/.*\/)scalableTargetDimensions\/\{scalableTargetDimensionId\}$
+  SNSSubscriptionEmail:
+    Type: String
+    Description: Email address to receive client certificate expiry notification
+Outputs:
+  PreProdReourceIdPrefix:
+    Description: Pre-prod ResourceId prefix for the resource to be registered in AWS Auto Scaling
+    Value:
+      !Sub |-
+        https://${CustomResourceEndpoint}.execute-api.${AWS::Region}.amazonaws.com/${PreProdStageDescription}/scalableTargetDimensions/
+  ProdReourceIdPrefix:
+    Description: Prod ResourceId prefix for the resource to be registered in AWS Auto Scaling
+    Value:
+      !Sub |-
+        https://${CustomResourceEndpoint}.execute-api.${AWS::Region}.amazonaws.com/${ProdStageDescription}/scalableTargetDimensions/
+  S3BucketName:
+      Value: !Ref S3Bucket
+      Description: Location of CloudTrail logs for Custom Resource scaling
