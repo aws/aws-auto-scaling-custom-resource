@@ -15,6 +15,10 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 AWSTemplateFormatVersion: 2010-09-09
+Description: >
+  **WARNING**
+  This template will create and use resources of Lambda, API Gateway, S3, CloudTrail, SNS, CloudWatch.
+  You will be billed for some of the AWS resources used if you create a stack from this template.
 Resources:
   CustomResourceEndpoint:
     Type: 'AWS::ApiGateway::RestApi'
