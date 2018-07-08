@@ -65,7 +65,7 @@ The response for GET and PATCH will look something like:
 
 ## 2. Launch the Stack
 
-Download the [custom-resource-api.yaml](https://github.com/aws/aws-auto-scaling-custom-resource/blob/master/cloudformation/templates/custom-resource-api.yaml) CloudFormation template from GitHub.
+Download the [custom-resource-stack.yaml](https://github.com/aws/aws-auto-scaling-custom-resource/blob/master/cloudformation/templates/custom-resource-stack.yaml) CloudFormation template from GitHub.
 
 Run the following [create-stack](https://docs.aws.amazon.com/cli/latest/reference/cloudformation/create-stack.html) command, adding your details to the following parameters:
 
