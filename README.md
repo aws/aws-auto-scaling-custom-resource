@@ -264,7 +264,7 @@ Rerun this command occasionally. It may take a few minutes before your scaling p
 
 In this step, you view the Application Auto Scaling actions that are initiated on your behalf.
 
-Run the [describe-scaling-activities] (https://docs.aws.amazon.com/cli/latest/reference/application-autoscaling/describe-scaling-activities.html) command:
+Run the [describe-scaling-activities](https://docs.aws.amazon.com/cli/latest/reference/application-autoscaling/describe-scaling-activities.html) command:
 
 ```
 aws application-autoscaling describe-scaling-activities --service-namespace custom-resource --resource-id fileb://~/custom-resource-id.txt --max-results 20
