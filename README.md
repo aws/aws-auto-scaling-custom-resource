@@ -81,8 +81,8 @@ aws cloudformation create-stack \
     --region us-west-2 \
     --capabilities CAPABILITY_NAMED_IAM CAPABILITY_IAM \
     --parameters \         
-        ParameterKey=SNSSubscriptionEmail,ParameterValue="[email-address]" \
-        ParameterKey=IntegrationHttpEndpoint,ParameterValue='"[endpoint-url]"'
+        ParameterKey=SNSSubscriptionEmail,ParameterValue="email-address" \
+        ParameterKey=IntegrationHttpEndpoint,ParameterValue='"endpoint-url"'
 ```
 
 ## 3. Configure SSL/HTTPS  
@@ -93,7 +93,7 @@ When the deployment has completed successfully, you’ll receive an email to con
 
 In addition to confirming your subscription to certificate expiration notices, you'll need to configure the SSL/HTTPS connection between the API Gateway and your backend system. 
 
-For more information, see [Use Client-Side SSL Certificates for Authentication by the Backend](https://docs.aws.amazon.com/apigateway/latest/developerguide/getting-started-client-side-ssl-authentication.html) in the Amazon API Gateway Developer Guide.
+For more information, see [Use Client-Side SSL Certificates for Authentication by the Backend](https://docs.aws.amazon.com/apigateway/latest/developerguide/getting-started-client-side-ssl-authentication.html) in the *Amazon API Gateway Developer Guide*.
 
 ## 4. Get the Resource ID
 
@@ -129,9 +129,9 @@ This returns the following response:
 The Resource ID has the following syntax:
 `[OutputValue][identifier]`
 
-The `OutputValue` is one of the HTTPS prefixes ("Prod" or "Preprod") from the output you created above. 
+The `OutputValue` is one of the HTTPS prefixes ("Prod" or "Preprod") from the `describe-stacks` output. 
 
-The identifier is a string that identifies a scalable resource in your backend system. An easy way to get the identifier is by executing a GET request against your endpoint (see step 1) and then copying the value for *scalableTargetDimensionId*. 
+The identifier is a string that identifies a scalable resource in your backend system (the value for *scalableTargetDimensionId* in step 1). 
 
 **Example: Resource ID where “1-23456789” is the identifier in your backend system**
 
@@ -191,7 +191,7 @@ This registers your scalable target with Application Auto Scaling, and allows it
 
 In this step, you create a sample scaling policy for your custom resource that specifies how the scalable target should be scaled when CloudWatch alarms are triggered. 
 
-For example, for target tracking, you define a target-tracking scaling policy that meets your resource's requirements by using a custom metric. You can define a custom metric based on any metric that changes in proportion to scaling.
+For example, for target tracking, you define a target tracking scaling policy that meets your resource's specific requirements by creating a custom metric. You can define a custom metric based on any metric that changes in proportion to scaling.
 
 Not all metrics work for target tracking. The metric must be a valid utilization metric, and it must describe how busy your custom resource is. The value of the metric must increase or decrease in inverse proportion to the number of capacity units. That is, the value of the metric should decrease when capacity increases. 
 
@@ -270,7 +270,7 @@ Run the [describe-scaling-activities](https://docs.aws.amazon.com/cli/latest/ref
 aws application-autoscaling describe-scaling-activities --service-namespace custom-resource --resource-id fileb://~/custom-resource-id.txt --max-results 20
 ```
 
-You should eventually see the following output: 
+You should see the following output: 
 ```JSON
 {
     "ScalingActivities": [
