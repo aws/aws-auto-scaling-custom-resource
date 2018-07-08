@@ -39,7 +39,7 @@ The core AWS components used by this deployment include the following AWS servic
 
 ## 1. Test your REST Endpoint URL
 
-Before running the CloudFormation template, you need an HTTP/HTTPS endpoint to expose your REST resources. Make sure your application conforms to the REST API specification in the [custom-resource-stack.yaml] (https://github.com/aws/aws-auto-scaling-custom-resource/blob/master/cloudformation/templates/custom-resource-stack.yaml) CloudFormation template. 
+Before running the CloudFormation template, you need an HTTP/HTTPS endpoint to expose your REST resources. Make sure your application conforms to the REST API specification in the [custom-resource-stack.yaml](https://github.com/aws/aws-auto-scaling-custom-resource/blob/master/cloudformation/templates/custom-resource-stack.yaml) CloudFormation template. 
 
 After you create an endpoint that contains the required REST resources, you can verify that the endpoint URL works by issuing GET and PATCH requests to it, for example: 
 
@@ -67,7 +67,7 @@ The response for GET and PATCH will look something like:
 
 Download the [custom-resource-api.yaml](https://github.com/aws/aws-auto-scaling-custom-resource/blob/master/cloudformation/templates/custom-resource-api.yaml) CloudFormation template from GitHub.
 
-Run the following [create-stack] (https://docs.aws.amazon.com/cli/latest/reference/cloudformation/create-stack.html) command, adding your details to the following parameters:
+Run the following [create-stack](https://docs.aws.amazon.com/cli/latest/reference/cloudformation/create-stack.html) command, adding your details to the following parameters:
 
 1. *SNSSubscriptionEmail*: Replace *email-address* with an email address to send certificate expiry notifications to.
 2. *IntegrationHttpEndpoint*: Replace *endpoint-url* with your REST endpoint URL, for example, http://api.example.com/v1/scalableTargetDimensions/1-23456789.
@@ -99,7 +99,7 @@ For more information, see [Use Client-Side SSL Certificates for Authentication b
 
 To continue with the deployment steps, you need the HTTPS link (aka Resource ID) for your API Gateway endpoint. 
 
-After the stack launches, run the [describe-stacks] (https://docs.aws.amazon.com/cli/latest/reference/cloudformation/describe-stacks.html) command and copy the output. 
+After the stack launches, run the [describe-stacks](https://docs.aws.amazon.com/cli/latest/reference/cloudformation/describe-stacks.html) command and copy the output. 
 
 ```
 aws cloudformation describe-stacks --region us-west-2 --stack-name CustomResourceAPIGatewayStack  | jq '.Stacks[0]["Outputs"]'
@@ -216,7 +216,7 @@ cat ~/config.json
 }
 ```
 
-Use the following [put-scaling-policy] (https://docs.aws.amazon.com/cli/latest/reference/application-autoscaling/put-scaling-policy.html) command, along with the config.json file you created previously, to create a scaling policy named custom-tt-scaling-policy that keeps the average utilization of your custom resource at 50 percent:
+Use the following [put-scaling-policy](https://docs.aws.amazon.com/cli/latest/reference/application-autoscaling/put-scaling-policy.html) command, along with the config.json file you created previously, to create a scaling policy named custom-tt-scaling-policy that keeps the average utilization of your custom resource at 50 percent:
 
 ```
 aws application-autoscaling put-scaling-policy \
