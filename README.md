@@ -137,7 +137,7 @@ The identifier is a string that identifies a scalable resource in your backend s
 
 `https://example.execute-api.us-west-2.amazonaws.com/prod/scalableTargetDimensions/1-23456789`
 
-## 5. Test the API Gateway integration
+## 5. Test the API Gateway Integration
 
 The next step is to verify that the API in API Gateway is integrated with your application. The [Postman](https://www.getpostman.com/) app is a convenient testing tool for this because it provides fields for adding your signing information to the HTTPS request.
 
@@ -165,7 +165,7 @@ curl -X GET \ https://example.execute-api.us-west-2.amazonaws.com/prod/scalableT
 }
 ```
 
-## 6. Register a scalable target
+## 6. Register a Scalable Target
 
 You will now register your resource's capacity as a scalable target with Application Auto Scaling. A scalable target is a resource that Application Auto Scaling can scale out or scale in.
 
@@ -187,7 +187,7 @@ $ aws application-autoscaling register-scalable-target --service-namespace custo
 
 This registers your scalable target with Application Auto Scaling, and allows it to manage capacity, but only within the range of 0 to 10 capacity units. 
 
-## 7. Create a scaling policy
+## 7. Create a Scaling Policy
 
 In this step, you create a sample scaling policy for your custom resource that specifies how the scalable target should be scaled when CloudWatch alarms are triggered. 
 
@@ -243,7 +243,7 @@ $ aws application-autoscaling put-scaling-policy \
 
 This creates two alarms: one for scaling out and one for scaling in. It also returns the Amazon Resource Name (ARN) of the policy that is registered with CloudWatch, which CloudWatch uses to invoke scaling whenever the metric is in breach. 
 
-## 8. Test the scaling policy 
+## 8. Test the Scaling Policy 
 
 Now you can test your scaling policy by publishing sample metric data to CloudWatch. CloudWatch alarms will trigger the scaling policy and calculate the scaling adjustment based on the metric and the target value. To do this, you will run a bash script. 
 
@@ -259,7 +259,7 @@ done
 ```
 It may take a few minutes before your scaling policy is invoked. When the target ratio exceeds 50 percent for a sustained period of time, Application Auto Scaling notifies your custom resouce to adjust capacity upward, so that the 50 percent target utilization can be maintained.
 
-## 9. View Application Auto Scaling actions
+## 9. View Application Auto Scaling Actions
 
 In this step, you view the Application Auto Scaling actions that are initiated on your behalf.
 
