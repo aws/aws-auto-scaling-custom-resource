@@ -49,7 +49,7 @@ Resources:
               tags:
               - "ScalableTargets"
               summary: "Describe target"
-              description: "Returns information about a registered scalable target, \
+              description: "Returns information about a registered scalable target dimension, \
               including the desired and actual capacity."
               operationId: "controllers.default_controller.scalable_target_id_get"
               parameters:
