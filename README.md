@@ -6,7 +6,7 @@ Once everything is deployed and configured, you'll have the following environmen
 
 IMAGE GOES HERE
 
-You can use this repository and the deployment steps below as the starting point for your customizations. More information about how you can use this configuration is detailed in this blog post [link].
+You can use this repository and the deployment steps below as the starting point for your customizations. 
 
 If you find this information useful, feel free to spread the word about custom resource auto scaling. Also, we welcome all feedback, pull requests, and other contributions!
 
@@ -44,7 +44,7 @@ Before running the CloudFormation template, you need an HTTP/HTTPS endpoint to e
 After you create an endpoint that contains the required REST resources, you can verify that the endpoint URL works by issuing GET and PATCH requests to it, for example: 
 
 ```
-curl -i -X GET --header 'Accept: application/json' 'http://api.example.com/v1/scalableTargetDimensions/myservice'
+$ curl -i -X GET --header 'Accept: application/json' 'http://api.example.com/v1/scalableTargetDimensions/myservice'
 ```
 
 If the endpoint is set up properly, it should return a standard 200 OK response message and a payload that represents the requested resource and its status.
@@ -55,7 +55,7 @@ The response for GET and PATCH will look something like:
 {
   "actualCapacity": 2.0,
   "desiredCapacity": 2.0,
-  "dimensionName": "",
+  "dimensionName": "MyDimension",
   "resourceName": "MyService",
   "scalableTargetDimensionId": "1-23456789",
   "scalingStatus": "Successful",
@@ -75,7 +75,7 @@ Run the following [create-stack](https://docs.aws.amazon.com/cli/latest/referenc
 Make a note of the AWS [region](https://docs.aws.amazon.com/general/latest/gr/rande.html) where you created this stack. You need it later. Note: The examples in this repository use us-west-2, but the steps will be the same if you deploy into a different region. 
 
 ```
-aws cloudformation create-stack \
+$ aws cloudformation create-stack \
     --stack-name CustomResourceAPIGatewayStack \
     --template-body file://~/custom-resource-stack.yaml \
     --region us-west-2 \
@@ -102,7 +102,7 @@ To continue with the deployment steps, you need the HTTPS link (aka Resource ID)
 After the stack launches, run the [describe-stacks](https://docs.aws.amazon.com/cli/latest/reference/cloudformation/describe-stacks.html) command and copy the output. 
 
 ```
-aws cloudformation describe-stacks --region us-west-2 --stack-name CustomResourceAPIGatewayStack  | jq '.Stacks[0]["Outputs"]'
+$ aws cloudformation describe-stacks --region us-west-2 --stack-name CustomResourceAPIGatewayStack  | jq '.Stacks[0]["Outputs"]'
 ```
 
 This returns the following response:
@@ -147,17 +147,17 @@ For a GET request, the Postman CURL response will look something like:
 
 ``` 
 curl -X GET \ https://example.execute-api.us-west-2.amazonaws.com/prod/scalableTargetDimensions/1-23456789 \
-  -H 'Authorization: AWS4-HMAC-SHA256 Credential=example/20180704/us-west-2/execute-api/aws4_request, SignedHeaders=content-type;host;x-amz-date;x-amz-security-token, Signature=MySignature' \
+  -H 'Authorization: AWS4-HMAC-SHA256 Credential=example/20180704/us-west-2/execute-api/aws4_request, SignedHeaders=content-type;host;x-amz-date;x-amz-security-token, Signature=SIGNATURE' \
   -H 'Cache-Control: no-cache' \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   -H 'Host: example.execute-api.us-west-2.amazonaws.com' \
-  -H 'Postman-Token: MyToken' \
+  -H 'Postman-Token: POSTMANTOKEN' \
   -H 'X-Amz-Date: 20180704T023500Z' \
-  -H 'X-Amz-Security-Token: -exampleGsaDOPMbU0jD31YxgnzECL0AfVpboexample1vkKtHcbh4Y/81dXwuP8Zx2tpg9Lexample+c7X6yoR8m4GX+KIU1JhexampleJ4fUfYMSady9q02Gw5IPMWCmr0ADQHPLLRp///exampleWxu5VxMX8Usx9PpqJmLjvXmZAexampleU7yb6oNR+0DfeAMwbsR79oyT6vXE2mdV2m/KazrpV+FLexampleFtrGHbY9ONbQI/vg1995x95exampleCd3U50Pje+exampleRrtWNHxRtP209twPSHvWVqOWq7f+Xm/exampleY4ogt7w2QU=-'
+  -H 'X-Amz-Security-Token: SESSIONTOKEN'
 {
   "actualCapacity": 2.0,
   "desiredCapacity": 2.0,
-  "dimensionName": "",
+  "dimensionName": "MyDimension",
   "resourceName": "MyService",
   "scalableTargetDimensionId": "1-23456789",
   "scalingStatus": "Successful",
@@ -176,13 +176,13 @@ Before you register your scalable target, you'll need to run the following comma
 The command will look like this, but with your Resource ID:
 
 ```
-echo -n "https://example.execute-api.us-west-2.amazonaws.com/prod/scalableTargetDimensions/1-23456789" > ~/custom-resource-id.txt
+$ echo -n "https://example.execute-api.us-west-2.amazonaws.com/prod/scalableTargetDimensions/1-23456789" > ~/custom-resource-id.txt
 ```
 
 This saves the file as `custom-resource-id.txt` in your home directory. You can now use the [register-scalable-target](https://docs.aws.amazon.com/cli/latest/reference/application-autoscaling/register-scalable-target.html) command to register your scalable target:
 
 ```
-aws application-autoscaling register-scalable-target --service-namespace custom-resource --scalable-dimension custom-resource:ResourceType:Property --resource-id file://~/custom-resource-id.txt --min-capacity 0 --max-capacity 10
+$ aws application-autoscaling register-scalable-target --service-namespace custom-resource --scalable-dimension custom-resource:ResourceType:Property --resource-id file://~/custom-resource-id.txt --min-capacity 0 --max-capacity 10
 ```
 
 This registers your scalable target with Application Auto Scaling, and allows it to manage capacity, but only within the range of 0 to 10 capacity units. 
@@ -198,7 +198,7 @@ Not all metrics work for target tracking. The metric must be a valid utilization
 The following cat command creates a sample metric for your scalable target in a config.json file in your home directory:
 
 ```
-cat ~/config.json
+$ cat ~/config.json
 {
    "TargetValue":50,
    "CustomizedMetricSpecification":{
@@ -219,7 +219,7 @@ cat ~/config.json
 Use the following [put-scaling-policy](https://docs.aws.amazon.com/cli/latest/reference/application-autoscaling/put-scaling-policy.html) command, along with the config.json file you created previously, to create a scaling policy named custom-tt-scaling-policy that keeps the average utilization of your custom resource at 50 percent:
 
 ```
-aws application-autoscaling put-scaling-policy \
+$ aws application-autoscaling put-scaling-policy \
 --policy-name custom-tt-scaling-policy \
 --policy-type TargetTrackingScaling \
 --service-namespace custom-resource \
@@ -251,14 +251,13 @@ Type the following command to run the bash script:
 
 ```bash
 // Command to put metric data that breaches AlarmHigh
-while sleep 3
+$ while sleep 3
 do
   aws cloudwatch put-metric-data --metric-name MyAverageUtilizationMetric --namespace MyNamespace --value 70 --unit Percent --dimensions MyDimensionType=MyDimensionValue
   echo -n "."
 done
 ```
-
-Rerun this command occasionally. It may take a few minutes before your scaling policy is invoked. When the target ratio exceeds 50 percent for a sustained period of time, Application Auto Scaling notifies your custom resouce to adjust capacity upward, so that the 50 percent target utilization can be maintained.
+It may take a few minutes before your scaling policy is invoked. When the target ratio exceeds 50 percent for a sustained period of time, Application Auto Scaling notifies your custom resouce to adjust capacity upward, so that the 50 percent target utilization can be maintained.
 
 ## 9. View Application Auto Scaling actions
 
@@ -267,10 +266,10 @@ In this step, you view the Application Auto Scaling actions that are initiated o
 Run the [describe-scaling-activities](https://docs.aws.amazon.com/cli/latest/reference/application-autoscaling/describe-scaling-activities.html) command:
 
 ```
-aws application-autoscaling describe-scaling-activities --service-namespace custom-resource --resource-id fileb://~/custom-resource-id.txt --max-results 20
+$ aws application-autoscaling describe-scaling-activities --service-namespace custom-resource --resource-id file://~/custom-resource-id.txt --max-results 20
 ```
 
-You should see the following output: 
+You should eventually see output that looks like this: 
 ```JSON
 {
     "ScalingActivities": [
@@ -289,8 +288,11 @@ You should see the following output:
     ]
 }
 ```
+
+Once you've viewed the scaling activity and verified scaling works, you can press Ctrl+C to stop the bash script.
+
 # License Summary
 
-This sample code is made available under a modified MIT license. See the LICENSE file.
+This sample code is made available under a modified MIT-0 license. See the [LICENSE](https://github.com/aws/aws-auto-scaling-custom-resource/blob/master/LICENSE) file.
 
 
