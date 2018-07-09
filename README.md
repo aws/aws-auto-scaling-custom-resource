@@ -4,7 +4,7 @@ The included AWS CloudFormation template launches a collection of AWS resources,
 
 Once everything is deployed and configured, you'll have the following environment in your AWS account.
 
-IMAGE GOES HERE
+![Image of Application Auto Scaling Custom Resource Environment](https://github.com/aws/aws-auto-scaling-custom-resource/blob/master/DESIGN.PNG)
 
 You can use this repository and the deployment steps below as the starting point for your customizations. 
 
@@ -195,7 +195,7 @@ For example, for target tracking, you define a target tracking scaling policy th
 
 Not all metrics work for target tracking. The metric must be a valid utilization metric, and it must describe how busy your custom resource is. The value of the metric must increase or decrease in inverse proportion to the number of capacity units. That is, the value of the metric should decrease when capacity increases. 
 
-The following cat command creates a sample metric for your scalable target in a config.json file in your home directory:
+The following cat command creates a sample metric for your scalable target in a `config.json` file in your home directory:
 
 ```
 $ cat ~/config.json
@@ -216,7 +216,7 @@ $ cat ~/config.json
 }
 ```
 
-Use the following [put-scaling-policy](https://docs.aws.amazon.com/cli/latest/reference/application-autoscaling/put-scaling-policy.html) command, along with the config.json file you created previously, to create a scaling policy named custom-tt-scaling-policy that keeps the average utilization of your custom resource at 50 percent:
+Use the following [put-scaling-policy](https://docs.aws.amazon.com/cli/latest/reference/application-autoscaling/put-scaling-policy.html) command, along with the `config.json` file you created previously, to create a scaling policy named `custom-tt-scaling-policy` that keeps the average utilization of your custom resource at 50 percent:
 
 ```
 $ aws application-autoscaling put-scaling-policy \
@@ -294,5 +294,3 @@ Once you've viewed the scaling activity and verified scaling works, you can pres
 # License Summary
 
 This sample code is made available under a modified MIT-0 license. See the [LICENSE](https://github.com/aws/aws-auto-scaling-custom-resource/blob/master/LICENSE) file.
-
-
