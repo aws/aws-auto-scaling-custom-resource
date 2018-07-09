@@ -17,8 +17,8 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: >
   **WARNING**
-  This template will create and use resources of Lambda, API Gateway, S3, CloudTrail, DynamoDB, CloudWatch.
-  You will be billed for some of the AWS resources used if you create a stack from this template.
+  This template will create and use the following AWS resources: Amazon API Gateway, DynamoDB, CloudTrail, CloudWatch, Lambda, and Simple Storage Service (S3).
+  You will be billed for the resources used if you create a stack from this template.
 Resources:
   CustomResourceEndpoint:
     DependsOn:
@@ -28,11 +28,11 @@ Resources:
     Type: 'AWS::ApiGateway::RestApi'
     Properties:
       Name: Custom Resource Scaling API
-      Description: API for Custom Resource Management. This is to be utilized by AWS AutoScaling.
+      Description: A new REST API in API Gateway to use with Application Auto Scaling and a mock custom resource.
       Body:
         swagger: "2.0"
         info:
-          description: "Scaling API through API Gateway"
+          description: "Swagger REST API Specification"
           version: "1.0.0"
           title: "Scaling API"
           license:
@@ -49,19 +49,19 @@ Resources:
               tags:
               - "ScalableTargets"
               summary: "Describe target"
-              description: "The scalableTargetDimensions endpoint returns information about the registered \
-             ScalableTargetDimension, including the desired and actual capacity."
+              description: "Returns information about a registered scalable target dimension, \
+              including the desired and actual capacity."
               operationId: "controllers.default_controller.scalable_target_id_get"
               parameters:
               - name: "scalableTargetDimensionId"
                 in: "path"
-                description: "Id of ScalableTargetDimension to describe."
+                description: "The identifier of a scalable target dimension to retrieve."
                 required: true
                 type: "string"
                 format: ""
               responses:
                 '200':
-                  description: "JSON description of the ScalableTargetDimension"
+                  description: "A JSON object that contains information about the resource."
                   schema:
                     '$ref': "#/definitions/ScalableTargetDimension"
                 '400':
@@ -120,19 +120,19 @@ Resources:
               parameters:
               - name: "scalableTargetDimensionId"
                 in: "path"
-                description: "Id of ScalableTargetDimension to update."
+                description: "The identifier of the scalable target dimension to update."
                 required: true
                 type: "string"
                 format: ""
               - in: "body"
                 name: "updateRequest"
-                description: "The updateRequest contains a description of how the ScalableTargetDimension should be updated"
+                description: "A request sent in JSON to update the scalable target dimension."
                 required: true
                 schema:
                   '$ref': "#/definitions/ScalableTargetDimensionUpdate"
               responses:
                 '200':
-                  description: "JSON description of ScalableTargetDimension"
+                  description: "A JSON object that contains information about the resource."
                   schema:
                     '$ref': "#/definitions/ScalableTargetDimension"
                 '400':
@@ -194,8 +194,8 @@ Resources:
               message:
                 type: "string"
           ScalableTargetDimension:
-            description: "A ScalableTargetDimension is a resource that represents the scaling state for a single dimension \
-           of a scalable target"
+            description: "A resource that represents the scaling state for a single dimension \
+           of a scalable target."
             type: "object"
             required:
             - "actualCapacity"
@@ -207,24 +207,23 @@ Resources:
               scalableTargetDimensionId:
                 type: "string"
                 format: ""
-                description: "Unique identifier representing a specific ScalableTargetDimension."
+                description: "A unique identifier representing a specific scalable target dimension."
               version:
                 type: "string"
                 format: ""
-                description: "Version of the specific ScalableTargetDimension. It is useful in avoiding scaling action taken \
-                on unregistered version of the ScalableTargetDimension"
+                description: "The version associated with the scalable target dimension."
               actualCapacity:
                 type: "number"
                 format: "double"
-                description: "The actual capacity of the ScalableTargetDimension"
+                description: "The actual capacity of the scalable target dimension."
               desiredCapacity:
                 type: "number"
                 format: "double"
-                description: "The desired capacity of the ScalableTargetDimension"
+                description: "The desired capacity of the scalable target dimension."
               scalingStatus:
                 type: "string"
                 format: ""
-                description: "current status of scaling activity"
+                description: "The current status of scaling activity."
                 enum:
                 - "Pending" # scaling action has not yet begun
                 - "InProgress" # scaling action is in progress
@@ -233,17 +232,17 @@ Resources:
               resourceName:
                 type: "string"
                 format: ""
-                description: "Optional user friendly name representing a specific Resource."
+                description: "Optional user-friendly name for a specific resource."
               dimensionName:
                 type: "string"
                 format: ""
-                description: "Optional user friendly name representing a dimension of the resource to be scaled."
+                description: "Optional user-friendly name for the scalable dimension associated with the resource."
               failureReason:
                 type: "string"
                 format: ""
-                description: "Optional failure reason that should be provided if the scaling action failed"
+                description: "Optional failure reason that is provided if a scaling action fails."
           ScalableTargetDimensionUpdate:
-            description: "An update to be applied to the ScalableTargetDimension"
+            description: "An update to be applied to the scalable target dimension."
             type: "object"
             required:
             - "desiredCapacity"
@@ -251,7 +250,7 @@ Resources:
               desiredCapacity:
                 type: "number"
                 format: "double"
-                description: "The new desired capacity of the target"
+                description: "The new desired capacity of the target."
   ProdStageDescription:
     Type: "AWS::ApiGateway::Stage"
     Properties:
@@ -268,7 +267,7 @@ Resources:
   ProdDeployment:
     Type: "AWS::ApiGateway::Deployment"
     Properties:
-      Description: "Prod deployment for the scaling API that connects to an prod integration endpoint"
+      Description: "The prod path through which the Scaling API deployment is accessible."
       RestApiId: !Ref CustomResourceEndpoint
   CustomResourceDDBTable:
     Type: "AWS::DynamoDB::Table"
@@ -287,7 +286,7 @@ Resources:
       TableName: "CustomScalableTargets"
   LambdaServiceRole:
     DependsOn: Account
-    # This service role allows Lambda function to call DDB and CloudWatch
+    # This service role allows Lambda function to call DynamoDB and CloudWatch
     Type: "AWS::IAM::Role"
     Properties:
       RoleName: "CustomResource-LambdaServiceRole"
@@ -362,7 +361,7 @@ Resources:
   LambdaFunction:
     Type: "AWS::Lambda::Function"
     Properties:
-      Description: "Mock custom resource capacity service"
+      Description: "A Lambda function used to simulate scaling of a custom resource."
       Handler: "index.lambda_handler"
       Role:
         Fn::GetAtt:
@@ -464,7 +463,7 @@ Resources:
     DependsOn:
       - LambdaServiceRole
       - CustomResourceDDBTable
-  LambdaInvokeGETPermission: # Grant APIGateway access to invoke this lambda function
+  LambdaInvokeGETPermission: # Grant API Gateway access to invoke this Lambda function
     DependsOn: LambdaFunction
     Type: 'AWS::Lambda::Permission'
     Properties:
@@ -476,7 +475,7 @@ Resources:
       SourceArn: # arn:aws:execute-api:region:account-id:api-id/stage/method/resource-path
         !Sub |-
           arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${CustomResourceEndpoint}/*/GET/scalableTargetDimensions/{scalableTargetDimensionId}
-  LambdaInvokePATCHPermission: # Grant APIGateway access to invoke this lambda function
+  LambdaInvokePATCHPermission: # Grant API Gateway access to invoke this lambda function
     DependsOn: LambdaFunction
     Type: 'AWS::Lambda::Permission'
     Properties:
@@ -531,10 +530,10 @@ Resources:
       IsLogging: true
 Outputs:
   ProdReourceIdPrefix:
-    Description: Prod ResourceId prefix for the resource to be registered in AWS Auto Scaling
+    Description: Application Auto Scaling Resource ID prefix for Prod.
     Value:
       !Sub |-
         https://${CustomResourceEndpoint}.execute-api.${AWS::Region}.amazonaws.com/${ProdStageDescription}/scalableTargetDimensions/
   S3BucketName:
       Value: !Ref S3Bucket
-      Description: Location of CloudTrail logs for Custom Resource scaling
+      Description: The location of the CloudTrail logs for API-related event history.
