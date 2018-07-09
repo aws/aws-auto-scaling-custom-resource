@@ -28,6 +28,10 @@ The core AWS components used by this deployment include the following AWS servic
 * [AWS Lambda](https://aws.amazon.com/lambda/) 
 * [Amazon Simple Notification Service (SNS)](https://aws.amazon.com/sns/)
 
+# Regional Availability
+
+Custom resource auto scaling is available in Canada (Central), US West (N. California), US East (N. Virginia), US East (Ohio), US West (Oregon), South America (Sao Paulo), EU (Frankfurt), EU (Ireland), EU (London), EU (Paris), Asia Pacific (Mumbai), Asia Pacific (Seoul), Asia Pacific (Singapore), Asia Pacific (Sydney), and Asia Pacific (Tokyo). 
+
 # Prerequisites
 
 * AWS Command Line Interface [installed](https://docs.aws.amazon.com/cli/latest/userguide/installing.html) and [configured](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html). 
