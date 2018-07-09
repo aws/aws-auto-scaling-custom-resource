@@ -475,7 +475,7 @@ Resources:
       SourceArn: # arn:aws:execute-api:region:account-id:api-id/stage/method/resource-path
         !Sub |-
           arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${CustomResourceEndpoint}/*/GET/scalableTargetDimensions/{scalableTargetDimensionId}
-  LambdaInvokePATCHPermission: # Grant API Gateway access to invoke this lambda function
+  LambdaInvokePATCHPermission: # Grant API Gateway access to invoke this Lambda function
     DependsOn: LambdaFunction
     Type: 'AWS::Lambda::Permission'
     Properties:
