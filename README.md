@@ -241,7 +241,7 @@ $ aws application-autoscaling put-scaling-policy \
 }
 ```
 
-This creates two alarms: one for scaling out and one for scaling in. It also returns a Amazon Resource Name (ARN) of the policy that is registered with CloudWatch, which it uses to invoke scaling whenever the metric is in breach. 
+This creates two alarms: one for scaling out and one for scaling in. It also returns the Amazon Resource Name (ARN) of the policy that is registered with CloudWatch, which CloudWatch uses to invoke scaling whenever the metric is in breach. 
 
 ## 8. Test the scaling policy 
 
