@@ -206,8 +206,8 @@ $ cat ~/config.json
       "Namespace":"MyNamespace",
       "Dimensions":[
          {
-            "Name":"MyDimensionName",
-            "Value":"MyDimensionValue"
+            "Name":"MyMetricDimensionName",
+            "Value":"MyMetricDimensionValue"
          }
       ],
       "Statistic":"Average",
@@ -253,7 +253,7 @@ Type the following command to run the bash script:
 // Command to put metric data that breaches AlarmHigh
 $ while sleep 3
 do
-  aws cloudwatch put-metric-data --metric-name MyAverageUtilizationMetric --namespace MyNamespace --value 70 --unit Percent --dimensions MyDimensionType=MyDimensionValue
+  aws cloudwatch put-metric-data --metric-name MyAverageUtilizationMetric --namespace MyNamespace --value 70 --unit Percent --dimensions MyMetricDimensionName=MyMetricDimensionValue
   echo -n "."
 done
 ```
