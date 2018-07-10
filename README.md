@@ -6,7 +6,7 @@ Once everything is deployed and configured, you'll have the following environmen
 
 ![Image of Application Auto Scaling Custom Resource Environment](https://github.com/aws/aws-auto-scaling-custom-resource/blob/master/DESIGN.PNG)
 
-You can use this repository and the deployment steps below as the starting point for your customizations. 
+You can use this repository and the deployment steps below as the starting point for your customizations. More information about this approach to custom resource auto scaling is detailed in this [blog post](https://medium.com/netflix-techblog/auto-scaling-production-services-on-titus-1f3cd49f5cd7).
 
 If you find this information useful, feel free to spread the word about custom resource auto scaling. Also, we welcome all feedback, pull requests, and other contributions!
 
@@ -40,6 +40,8 @@ Custom resource auto scaling is available in Canada (Central), US West (N. Calif
 * Permissions to [publish metrics](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/permissions-reference-cw.html) to CloudWatch.
 
 # Deployment Steps
+
+Follow the step-by-step instructions in this section to build and test the custom resource auto scaling environment in your AWS account. The CloudFormation template provided with this repository creates the AWS networking infrastructure from scratch. 
 
 ## 1. Test your REST Endpoint URL
 
@@ -198,6 +200,8 @@ In this step, you create a sample scaling policy for your custom resource that s
 For example, for target tracking, you define a target tracking scaling policy that meets your resource's specific requirements by creating a custom metric. You can define a custom metric based on any metric that changes in proportion to scaling.
 
 Not all metrics work for target tracking. The metric must be a valid utilization metric, and it must describe how busy your custom resource is. The value of the metric must increase or decrease in inverse proportion to the number of capacity units. That is, the value of the metric should decrease when capacity increases. 
+
+You can find additional information about custom metrics in the CloudWatch documentation under [Publish Custom Metrics](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/publishingMetrics.html).
 
 The following cat command creates a sample metric for your scalable target in a `config.json` file in your home directory:
 
