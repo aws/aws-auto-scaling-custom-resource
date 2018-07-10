@@ -6,7 +6,7 @@ Once everything is deployed and configured, you'll have the following environmen
 
 ![Image of Application Auto Scaling Custom Resource Environment](https://github.com/aws/aws-auto-scaling-custom-resource/blob/master/DESIGN.PNG)
 
-You can use this repository and the deployment steps below as the starting point for your customizations. 
+You can use this repository and the deployment steps below as the starting point for your customizations. More information about this approach to custom resource auto scaling is detailed in this [blog post](https://medium.com/netflix-techblog/auto-scaling-production-services-on-titus-1f3cd49f5cd7).
 
 If you find this information useful, feel free to spread the word about custom resource auto scaling. Also, we welcome all feedback, pull requests, and other contributions!
 
@@ -40,6 +40,8 @@ Custom resource auto scaling is available in Canada (Central), US West (N. Calif
 * Permissions to [publish metrics](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/permissions-reference-cw.html) to CloudWatch.
 
 # Deployment Steps
+
+Follow the step-by-step instructions in this section to build and test the custom resource auto scaling environment in your AWS account. The CloudFormation template provided with this repository creates the core AWS components from scratch. 
 
 ## 1. Test your REST Endpoint URL
 
@@ -246,6 +248,8 @@ $ aws application-autoscaling put-scaling-policy \
 ```
 
 This creates two alarms: one for scaling out and one for scaling in. It also returns the Amazon Resource Name (ARN) of the policy that is registered with CloudWatch, which CloudWatch uses to invoke scaling whenever the metric is in breach. 
+
+You can find additional information about custom metrics in the CloudWatch documentation under [Publish Custom Metrics](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/publishingMetrics.html).
 
 ## 8. Test the Scaling Policy 
 
