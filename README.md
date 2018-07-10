@@ -201,8 +201,6 @@ For example, for target tracking, you define a target tracking scaling policy th
 
 Not all metrics work for target tracking. The metric must be a valid utilization metric, and it must describe how busy your custom resource is. The value of the metric must increase or decrease in inverse proportion to the number of capacity units. That is, the value of the metric should decrease when capacity increases. 
 
-You can find additional information about custom metrics in the CloudWatch documentation under [Publish Custom Metrics](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/publishingMetrics.html).
-
 The following cat command creates a sample metric for your scalable target in a `config.json` file in your home directory:
 
 ```
@@ -250,6 +248,8 @@ $ aws application-autoscaling put-scaling-policy \
 ```
 
 This creates two alarms: one for scaling out and one for scaling in. It also returns the Amazon Resource Name (ARN) of the policy that is registered with CloudWatch, which CloudWatch uses to invoke scaling whenever the metric is in breach. 
+
+You can find additional information about custom metrics in the CloudWatch documentation under [Publish Custom Metrics](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/publishingMetrics.html).
 
 ## 8. Test the Scaling Policy 
 
