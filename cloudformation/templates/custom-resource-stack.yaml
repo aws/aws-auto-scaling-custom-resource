@@ -491,12 +491,12 @@ Parameters:
     Type: String
     Description: The email address to receive client certificate expiry notification.
 Outputs:
-  PreProdReourceIdPrefix:
+  PreProdResourceIdPrefix:
     Description: Application Auto Scaling Resource ID prefix for Preprod.
     Value:
       !Sub |-
         https://${CustomResourceEndpoint}.execute-api.${AWS::Region}.amazonaws.com/${PreProdStageDescription}/scalableTargetDimensions/
-  ProdReourceIdPrefix:
+  ProdResourceIdPrefix:
     Description: Application Auto Scaling Resource ID prefix for Prod.
     Value:
       !Sub |-
