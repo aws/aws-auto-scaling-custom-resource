@@ -41,7 +41,7 @@ Custom resource auto scaling is available in Canada (Central), US West (N. Calif
 
 # Deployment Steps
 
-Follow the step-by-step instructions in this section to build and test the custom resource auto scaling environment in your AWS account. The CloudFormation template provided with this repository creates the AWS networking infrastructure from scratch. 
+Follow the step-by-step instructions in this section to build and test the custom resource auto scaling environment in your AWS account. The CloudFormation template provided with this repository creates the core AWS components from scratch. 
 
 ## 1. Test your REST Endpoint URL
 
