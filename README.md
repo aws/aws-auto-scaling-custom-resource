@@ -116,7 +116,7 @@ This returns the following response:
   {
     "Description": "Application Auto Scaling Resource ID prefix for Preprod",
     "OutputValue": "https://example.execute-api.us-west-2.amazonaws.com/preprod/scalableTargetDimensions/",
-    "OutputKey": "PreProdReourceIdPrefix"
+    "OutputKey": "PreProdResourceIdPrefix"
   },
   {
     "OutputValue": "customresourceapigatewaystack-s3bucket-ha8id2l1wpo6",
@@ -125,7 +125,7 @@ This returns the following response:
   {
     "Description": "Application Auto Scaling Resource ID prefix for Prod",
     "OutputValue": "https://example.execute-api.us-west-2.amazonaws.com/prod/scalableTargetDimensions/",
-    "OutputKey": "ProdReourceIdPrefix"
+    "OutputKey": "ProdResourceIdPrefix"
   }
 ]
 ```

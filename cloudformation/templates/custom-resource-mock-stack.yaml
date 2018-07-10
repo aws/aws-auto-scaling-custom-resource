@@ -529,7 +529,7 @@ Resources:
         Ref: S3Bucket
       IsLogging: true
 Outputs:
-  ProdReourceIdPrefix:
+  ProdResourceIdPrefix:
     Description: Application Auto Scaling Resource ID prefix for Prod.
     Value:
       !Sub |-
