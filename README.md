@@ -1,3 +1,6 @@
+#### Announcing new region availability: Custom resource auto scaling is now available in the China (Beijing) region.
+* * *
+
 In this aws-auto-scaling-custom-resource repository, we demonstrate how to set up automatic scaling for custom resources using AWS services. In this context, a *custom resource* is an object that allows you to introduce your own application or service to the automatic scaling features of AWS.  
 
 The included AWS CloudFormation template launches a collection of AWS resources, including a new Amazon API Gateway endpoint. The API Gateway endpoint allows secure access to scalable resources in the application or service that you want automatic scaling to work with. 
@@ -30,7 +33,7 @@ The core AWS components used by this deployment include the following AWS servic
 
 # Regional Availability
 
-Custom resource auto scaling is available in Canada (Central), US West (N. California), US East (N. Virginia), US East (Ohio), US West (Oregon), South America (Sao Paulo), EU (Frankfurt), EU (Ireland), EU (London), EU (Paris), Asia Pacific (Mumbai), Asia Pacific (Seoul), Asia Pacific (Singapore), Asia Pacific (Sydney), and Asia Pacific (Tokyo). 
+Custom resource auto scaling is available in Canada (Central), US West (N. California), US East (N. Virginia), US East (Ohio), US West (Oregon), South America (Sao Paulo), EU (Frankfurt), EU (Ireland), EU (London), EU (Paris), Asia Pacific (Mumbai), Asia Pacific (Seoul), Asia Pacific (Singapore), Asia Pacific (Sydney), Asia Pacific (Tokyo), and China (Beijing). 
 
 # Prerequisites
 
