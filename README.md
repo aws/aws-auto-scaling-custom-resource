@@ -268,7 +268,7 @@ do
   echo -n "."
 done
 ```
-It may take a few minutes before your scaling policy is invoked. When the target ratio exceeds 50 percent for a sustained period of time, Application Auto Scaling notifies your custom resouce to adjust capacity upward, so that the 50 percent target utilization can be maintained.
+It may take a few minutes before your scaling policy is invoked. When the target ratio exceeds 50 percent for a sustained period of time, Application Auto Scaling notifies your custom resource to adjust capacity upward, so that the 50 percent target utilization can be maintained.
 
 ## 9. View Application Auto Scaling Actions
 
