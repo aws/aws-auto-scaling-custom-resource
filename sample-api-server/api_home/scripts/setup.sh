@@ -17,6 +17,9 @@ fi
 /usr/sbin/a2dissite 000-default
 /usr/sbin/a2dissite 000-default-le-ssl
 
+/bin/chown -R www-data: /var/www/state
+/bin/chown -R www-data: /var/log/apache2
+
 Copy_ServerName=`/bin/egrep -o '^ServerName.*$' /etc/apache2/sites-available/000-default-le-ssl.conf`
 /bin/sed -i "s|##ServerName##|$Copy_ServerName|" /etc/apache2/sites-available/0-api.conf 
 /bin/sed -i "s|##ServerName##|$Copy_ServerName|" /etc/apache2/sites-available/1-api-80.conf 
