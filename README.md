@@ -1,218 +1,328 @@
-### A sample backend API server for the *aws-auto-scaling-custom-resource* parent project.  
-*Contributed by Sean Greathouse*  
+#### Announcing new region availability: Custom resource auto scaling is now available in the China (Beijing) region.
+* * *
 
-This project implements a sample api server that satisfies the requirements of the 
-*Test your REST Endpoint URL* step in *[aws-auto-scaling-custom-resource/README.md](../README.md)*  
-It is intended as an example, but can be modified for production use.  
-  
-#### The project provides:
-- Dockerized API server using Apache and Python  
-- Scripted setup  
-- Automated provisioning of SSL certificates from [Let's Encrypt](https://letsencrypt.org)
-- Demo mode to auto-rotate through application scaling states  
-- Production mode to enable integration with your custom scaling system  
-  
-#### Host system requirements:  
-- Docker (tested on Docker CE 18)
-- Inbound port 80 & 443 open to the internet  
-- A valid dns A or CNAME record pointing to your host system  
-- The host may not run any other process listening on ports 80 or 443
+In this aws-auto-scaling-custom-resource repository, we demonstrate how to set up automatic scaling for custom resources using AWS services. In this context, a *custom resource* is an object that allows you to introduce your own application or service to the automatic scaling features of AWS.  
 
+The included AWS CloudFormation template launches a collection of AWS resources, including a new Amazon API Gateway endpoint. The API Gateway endpoint allows secure access to scalable resources in the application or service that you want automatic scaling to work with. 
 
----
-### Setup Guide  
-  
-From your host system:    
+Once everything is deployed and configured, you'll have the following environment in your AWS account.
 
-Set the $API_HOME environment variable to the default or your preferred directory.  
-*This variable is required in subsequent commands.  Consider setting it as a permanent environment variable.*   
-`API_HOME=~/api_home`   
+![Image of Application Auto Scaling Custom Resource Environment](https://github.com/aws/aws-auto-scaling-custom-resource/blob/master/DESIGN.PNG)
 
-Clone the repository and build your api\_home working directory    
-```bash
-git clone git@github.com:aws/aws-auto-scaling-custom-resource.git 
-cd aws-auto-scaling-custom-resource/sample-api-server  
-mkdir $API_HOME
-cp -Rp api_home/* $API_HOME  
-cd $API_HOME 
+You can use this repository and the deployment steps below as the starting point for your customizations. More information about this approach to custom resource auto scaling is detailed in this [blog post](https://medium.com/netflix-techblog/auto-scaling-production-services-on-titus-1f3cd49f5cd7).
+
+If you find this information useful, feel free to spread the word about custom resource auto scaling. Also, we welcome all feedback, pull requests, and other contributions!
+
+# Audience
+
+* Recommended for a technical audience looking to use AWS Application Auto Scaling to configure automatic scaling for in-house applications and services.
+* Assumes experience with AWS, including configuring auto scaling with target tracking and custom metrics. 
+* Assumes fair knowledge of Amazon API Gateway, CloudWatch, Lambda, and Open API Specification (aka Swagger 2.0 specs). 
+
+# AWS Services Used
+
+The core AWS components used by this deployment include the following AWS services.
+
+* [Amazon API Gateway](https://aws.amazon.com/api-gateway/) 
+* [Application Auto Scaling](https://docs.aws.amazon.com/autoscaling/application/APIReference/Welcome.html) 
+* [AWS CloudFormation](https://aws.amazon.com/cloudformation/)
+* [AWS CloudTrail](https://aws.amazon.com/cloudtrail/) 
+* [Amazon CloudWatch](https://aws.amazon.com/cloudwatch/details/) 
+* [AWS Lambda](https://aws.amazon.com/lambda/) 
+* [Amazon Simple Notification Service (SNS)](https://aws.amazon.com/sns/)
+
+# Regional Availability
+
+Custom resource auto scaling is available in Canada (Central), US West (N. California), US East (N. Virginia), US East (Ohio), US West (Oregon), South America (Sao Paulo), EU (Frankfurt), EU (Ireland), EU (London), EU (Paris), Asia Pacific (Mumbai), Asia Pacific (Seoul), Asia Pacific (Singapore), Asia Pacific (Sydney), Asia Pacific (Tokyo), and China (Beijing). 
+
+# Prerequisites
+
+* AWS Command Line Interface [installed](https://docs.aws.amazon.com/cli/latest/userguide/installing.html) and [configured](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html). 
+* User credentials with permissions that allow you to configure automatic scaling and create the required service-linked role. For more information, see the [Application Auto Scaling User Guide](https://docs.aws.amazon.com/autoscaling/application/userguide/auth-and-access-control.html).  
+* Permissions to create a stack using a CloudFormation template, plus full access permissions to resources within the stack. For more information, see the [AWS CloudFormation User Guide](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/Welcome.html). 
+* Permissions to [publish metrics](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/permissions-reference-cw.html) to CloudWatch.
+
+# Deployment Steps
+
+Follow the step-by-step instructions in this section to build and test the custom resource auto scaling environment in your AWS account. The CloudFormation template provided with this repository creates the core AWS components from scratch. 
+
+## 1. Test your REST Endpoint URL
+
+Before running the CloudFormation template, you need an HTTP/HTTPS endpoint to expose your REST resources. Make sure your application conforms to the REST API specification in the [custom-resource-stack.yaml](https://github.com/aws/aws-auto-scaling-custom-resource/blob/master/cloudformation/templates/custom-resource-stack.yaml) CloudFormation template.  
+
+A sample REST endpoint is provided as a Dockerized Apache Python cgi.   See: [sample-api-server](./sample-api-server/)  
+
+After you create an endpoint that contains the required REST resources, you can verify that the endpoint URL works by issuing GET and PATCH requests to it, for example: 
+
 ```
-Pull the Docker base image  
-```bash
-docker pull ubuntu:xenial
-```   
-
-Set environment variables for SSL cert creation  
-*CERTBOT_HOSTNAME must match the dns entry for your host*  
-*CERTBOT_EMAIL* will be used by Let\'s Encrypt to notify you of certificate expiration  
-
-```bash
-CERTBOT_EMAIL="foo@example.com"    
-CERTBOT_HOSTNAME="api.example.com"  
-```
-
-Docker run to populate the directories in *api\_home* with apache config and ssl certificates.  
-All system config, state, and logs are stored in these directories on your local host.  
-```bash
-docker run --rm -p 80:80 -it --name api_build_static \
--v "$API_HOME"/var/www:/var/www -v "$API_HOME"/var/log/apache2:/var/log/apache2 \
--v "$API_HOME"/etc/apache2:/etc/apache2 -v "$API_HOME"/usr/lib/cgi-bin:/usr/lib/cgi-bin  \
--v "$API_HOME"/etc/letsencrypt:/etc/letsencrypt -v "$API_HOME"/scripts:/root/scripts \
---env CERTBOT_EMAIL="$CERTBOT_EMAIL" --env CERTBOT_HOSTNAME="$CERTBOT_HOSTNAME" \
-ubuntu:xenial /root/scripts/setup.sh
+$ curl -i -X GET --header 'Accept: application/json' 'http://api.example.com/v1/scalableTargetDimensions/myservice'
 ```
 
-Build the Docker image for the api server  
-`docker build $API_HOME/ -t api_image`    
+If the endpoint is set up properly, it should return a standard 200 OK response message and a payload that represents the requested resource and its status.
 
-Run the Docker image as a daemonized container  
-* Listening on ports 80 & 443  
-* Mounting config, docroot, log and cgi directories from localhost over the same directories in the Docker container.   
-*Note that the container will not run automatically at system startup.*  
-```bash
-docker run --rm -p 80:80 -p 443:443 -d --name api \
--v "$API_HOME"/var/www:/var/www -v "$API_HOME"/var/log/apache2:/var/log/apache2 \
--v "$API_HOME"/etc/apache2:/etc/apache2 -v "$API_HOME"/usr/lib/cgi-bin:/usr/lib/cgi-bin  \
--v "$API_HOME"/etc/letsencrypt:/etc/letsencrypt \
-api_image
+The response for GET and PATCH will look something like:
+
+```json
+{
+  "actualCapacity": 2.0,
+  "desiredCapacity": 2.0,
+  "dimensionName": "MyDimension",
+  "resourceName": "MyService",
+  "scalableTargetDimensionId": "1-23456789",
+  "scalingStatus": "Successful",
+  "version": "MyVersion"
+}
 ```
 
-To test your installation call the following url from a browser (replacing the hostname with your own)   
-`https://api.example.com/v1/scalableTargetDimensions/1-23456789`  
-you should see a json response:   
+## 2. Launch the Stack
+
+Download the [custom-resource-stack.yaml](https://github.com/aws/aws-auto-scaling-custom-resource/blob/master/cloudformation/templates/custom-resource-stack.yaml) CloudFormation template from GitHub.
+
+Run the following [create-stack](https://docs.aws.amazon.com/cli/latest/reference/cloudformation/create-stack.html) command, adding your details to the following parameters:
+
+1. *SNSSubscriptionEmail*: Replace *email-address* with an email address to send certificate expiry notifications to.
+2. *IntegrationHttpEndpoint*: Replace *endpoint-url* with your REST endpoint URL, for example, http://api.example.com/v1/scalableTargetDimensions/{scalableTargetDimensionId}
+
+Make a note of the AWS [region](https://docs.aws.amazon.com/general/latest/gr/rande.html) where you created this stack. You need it later. Note: The examples in this repository use us-west-2, but the steps will be the same if you deploy into a different region. 
+
 ```
-{"scalableTargetDimensionId": "10", "scalingStatus": "Successful", "resourceName": "MyService", "desiredCapacity": 1.0, "actualCapacity": 1.0, "dimensionName": "MyDimension", "version": "MyVersion"}
-```   
-
-If the above fails, test without https  
-`http://api.example.com/v1/scalableTargetDimensions/1-23456789`  
-You can also test from the command line of your host  
-`curl http://localhost/v1/scalableTargetDimensions/1-23456789`    
-If that fails, you can test to see if the Docker container is running   
-`docker ps`   
-And if Apache is working on port 80   
-`curl localhost`   
-
----
-### Host certificate setup  
-
-*Once you require host certificates for your api backend, you will no longer be able to test your api over https.  
-If your outbound network allows unencrypted PATCH commands you can test over http.  
-However, the following setup is not required for the integration to work so you can leave this step until after testing the full system.*   
-
-Get the certificate file you pulled pulled from API Gateway in the 
-*Configure SSL/HTTPS* section of *[aws-auto-scaling-custom-resource](../README.md)*  
-The certificate should look like the following (with more text between the BEGIN and END lines):    
+$ aws cloudformation create-stack \
+    --stack-name CustomResourceAPIGatewayStack \
+    --template-body file://~/custom-resource-stack.yaml \
+    --region us-west-2 \
+    --capabilities CAPABILITY_NAMED_IAM CAPABILITY_IAM \
+    --parameters \         
+        ParameterKey=SNSSubscriptionEmail,ParameterValue="email-address" \
+        ParameterKey=IntegrationHttpEndpoint,ParameterValue='"endpoint-url"'
 ```
------BEGIN CERTIFICATE-----
-MIIC6TCCAdGgAwIBAgIJAKumXi6NTmSBMA0GCSqGSIb3DQEBCwUAMDQxCzAJBgNV
-BAYTAlVTMRAwDgYDVQQHEwdTZWF0dGxlMRMwEQYDVQQDEwpBcGlHYXRld2F5MB4X
-EcQhaxYT710cDFtf9kkbzTQMt0os4mKuItILvKQ.......
------END CERTIFICATE----- 
+The stack takes only a few minutes to deploy. It creates a new REST API in API Gateway with two stages: “PreProd” and “Prod”. A stage defines the path through which an API deployment is accessible. Each stage is deployed with its own client-side certificate. 
+
+When the deployment has completed successfully, you’ll receive an email to confirm a subscription to the Amazon SNS topic created by the template. Choose the *Confirm subscription* link in the message to subscribe to emails that are sent whenever there is an expiring certificate. A Lambda function checks once a day to see if the client certificate is expiring in 7, 3, or 1 days.
+
+## 3. Get the Resource ID & API Gateway client certificate IDs
+
+To continue with the deployment steps, you need the HTTPS link (aka Resource ID) for your API Gateway endpoint. 
+
+After the stack launches, run the [describe-stacks](https://docs.aws.amazon.com/cli/latest/reference/cloudformation/describe-stacks.html) command and copy the output. 
+
+```
+$ aws cloudformation describe-stacks --region us-west-2 --stack-name CustomResourceAPIGatewayStack  | jq '.Stacks[0]["Outputs"]'
+```
+
+This returns the following response:
+
+```json
+[
+  {
+    "Description": "Application Auto Scaling Resource ID prefix for Preprod",
+    "OutputValue": "https://example.execute-api.us-west-2.amazonaws.com/preprod/scalableTargetDimensions/",
+    "OutputKey": "PreProdResourceIdPrefix"
+  },
+  {
+    "OutputValue": "customresourceapigatewaystack-s3bucket-ha8id2l1wpo6",
+    "OutputKey": "S3BucketName"
+  },
+  {
+    "Description": "Application Auto Scaling Resource ID prefix for Prod",
+    "OutputValue": "https://example.execute-api.us-west-2.amazonaws.com/prod/scalableTargetDimensions/",
+    "OutputKey": "ProdResourceIdPrefix"
+  },
+ {
+    "Description": "API Gateway Client Cert",
+    "OutputKey": "PreProdClientCertificate",
+    "OutputValue": "tt3rdw"
+  },
+  {
+    "Description": "API Gateway Client Cert",
+    "OutputKey": "ProdClientCertificate",
+    "OutputValue": "frw3tnx"
+  }
+]
+```
+
+The Resource ID has the following syntax:
+`[OutputValue][identifier]`
+
+The `OutputValue` is one of the HTTPS prefixes ("Prod" or "Preprod") from the `describe-stacks` output. 
+
+The identifier is a string that identifies a scalable resource in your backend system (the value for *scalableTargetDimensionId* in step 1). 
+
+**Example: Resource ID where “1-23456789” is the identifier in your backend system**
+
+`https://example.execute-api.us-west-2.amazonaws.com/prod/scalableTargetDimensions/1-23456789`
+
+## 4. Configure SSL/HTTPS  
+
+To configure the SSL/HTTPS connection between the API Gateway and your backend system, you need to download the ProdClientCertificate and PreProdClientCertificate from API Gateway.
+
+Get the `API Gateway Client Cert` Outputvalue(s) from the describe-stacks command from the previous step.
+
+Pass the following cli commands, replacing the `client-certificate-id` with your own, and save the certificate output.
+
+`aws apigateway get-client-certificate --client-certificate-id frw3tnx --output text`
+
+`aws apigateway get-client-certificate --client-certificate-id tt3rdw --output text`
+
+For more information, see [Use Client-Side SSL Certificates for Authentication by the Backend](https://docs.aws.amazon.com/apigateway/latest/developerguide/getting-started-client-side-ssl-authentication.html) in the *Amazon API Gateway Developer Guide*.
+
+
+## 5. Test the API Gateway Integration
+
+The next step is to verify that the API in API Gateway is integrated with your application. The [Postman](https://www.getpostman.com/) app is a convenient testing tool for this because it provides fields for adding your signing information to the HTTPS request.
+
+Follow the instructions in [Use Postman to Call an API](https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-use-postman-to-call-api.html) to send a test request in Postman. You can convert the response to CURL using the code snippet generator to view the headers and body, if desired. The responses for GET and PATCH requests should be similar to the response displayed in step 1. 
+
+For a GET request, the Postman CURL response will look something like:
+
 ``` 
-
-Edit the client certificate public key file and paste in the certificate  
-`vim $API_HOME/etc/apache2/public-keys/ProdClientCertificate.pem`   
-
-To require host certificate verification edit the Apache config file for the HTTPS Virtual Host  
-`vim $API_HOME/etc/apache2/sites-available/0-api.conf`  
-un-comment the following lines and save the file    
+curl -X GET \ https://example.execute-api.us-west-2.amazonaws.com/prod/scalableTargetDimensions/1-23456789 \
+  -H 'Authorization: AWS4-HMAC-SHA256 Credential=example/20180704/us-west-2/execute-api/aws4_request, SignedHeaders=content-type;host;x-amz-date;x-amz-security-token, Signature=SIGNATURE' \
+  -H 'Cache-Control: no-cache' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -H 'Host: example.execute-api.us-west-2.amazonaws.com' \
+  -H 'Postman-Token: POSTMANTOKEN' \
+  -H 'X-Amz-Date: 20180704T023500Z' \
+  -H 'X-Amz-Security-Token: SESSIONTOKEN'
+{
+  "actualCapacity": 2.0,
+  "desiredCapacity": 2.0,
+  "dimensionName": "MyDimension",
+  "resourceName": "MyService",
+  "scalableTargetDimensionId": "1-23456789",
+  "scalingStatus": "Successful",
+  "version": "MyVersion"
+}
 ```
-#SSLVerifyClient none
-#SSLCACertificateFile "public-keys/ProdClientCertificate.pem"
-#<Location "/v1/scalableTargetDimensions/">
-#SSLVerifyClient require
-#SSLVerifyDepth 1
-#</Location> 
-```
-then restart Apache in the container  
-`docker exec api /usr/sbin/apachectl restart`      
 
- ---
- ### Testing api backend scaling responses
- 
- When AWS Auto Scaling calls the API to initiate a scaling event it issues an https PATCH call with the new desired capacity.    
- To test directly in Postman, send a PATCH request to:   
- `http://api.example.com/v1/scalableTargetDimensions/1-23456789`   
- with a body payload of:   
- `{"desiredCapacity":2.0}`  
- The *1-23456789* in the URL above can be replaced by any ID.  The system can manage separate state for an arbitrary number of IDs.  
- AWS Auto Scaling will use the ID you set in the *Register a Scalable Target* section of *[aws-auto-scaling-custom-resource](../README.md)*   
- 
- The system will respond by setting the *desiredCapacity* to *2.0* and *scalingStatus* to *Pending*  
- ```
-{"scalingStatus": "Pending", "scalableTargetDimensionId": "1-23456789", "version": "MyVersion", "resourceName": "MyService", "actualCapacity": 1.0, "desiredCapacity": 2.0, "dimensionName": "MyDimension"}
-```  
-By default the system will increment the state for the *scalableTargetDimensionId* with each subsequent GET.  
-- *"scalingStatus": "InProgress"*   
-- *"scalingStatus": "Successful"*  - *"actualCapacity": 2.0*  
+## 6. Register a Scalable Target
 
-You can see the event progression in the api log (replace the *20180822* with the current host date):  
-`tail -f $API_HOME/var/log/apache2/api-20180822`  
+You will now register your resource's capacity as a scalable target with Application Auto Scaling. A scalable target is a resource that Application Auto Scaling can scale out or scale in.
+
+Note: Be sure to use the correct permissions when registering a scalable target, so that the [service-linked role](https://docs.aws.amazon.com/autoscaling/application/userguide/application-autoscaling-service-linked-roles.html) is automatically created. Otherwise, the scaling function will not work. 
+
+Before you register your scalable target, you'll need to run the following command to save the Resource ID in a txt file (with no newline character at the end of the file). Provide the Resource ID from step 4. 
+
+The command will look like this, but with your Resource ID:
 
 ```
-20180822-234725 Request: PATCH dimensionId: 1-23456789 {"desiredCapacity": 2.0}
-20180822-234725 Response: dimensionId: 1-23456789  desiredCapacity: 1.0 -> 2.0  scalingStatus: Successful -> Pending
-20180822-235128 Request: GET dimensionId: 1-23456789 
-20180822-235128 Response: dimensionId: 1-23456789  scalingStatus: Pending -> InProgress
-20180822-235303 Request: GET dimensionId: 1-23456789 
-20180822-235303 Response: dimensionId: 1-23456789  actualCapacity: 1.0 -> 2.0  scalingStatus: InProgress -> Successful
-```   
-Now that you have verified that the backend API works, you can proceed with the *Test the Scaling Policy* section in  *[aws-auto-scaling-custom-resource](../README.md)*  and watch the AWS Auto Scaling service issue scaling commands in the API log.  
+$ echo -n "https://example.execute-api.us-west-2.amazonaws.com/prod/scalableTargetDimensions/1-23456789" > ~/custom-resource-id.txt
+```
 
-If you want to simulate a scaling failure, change the cgi scripts *testFailure* mode.  
-*testFailure* works in *demoMode* by setting *scalingStatus* to *Failed* instead of *Successful* in the final scaling stage.  
-`vim $API_HOME/usr/lib/cgi-bin/api.py`  
-`testFailure = True`  
+This saves the file as `custom-resource-id.txt` in your home directory. You can now use the [register-scalable-target](https://docs.aws.amazon.com/cli/latest/reference/application-autoscaling/register-scalable-target.html) command to register your scalable target:
 
-### Production mode / manual scaling
-In a production scaling scenario, the system that does the actual application scaling will need to update the scaling state in the API.  In production mode the cgi script will still set *scalingStatus* from *Successful* to *Pending* as a response to the initial *desiredCapacity* change issued by AWS Auto Scaling.    
-To set production mode:  
-`vim $API_HOME/usr/lib/cgi-bin/api.py`  
-`demoMode = False`  
+```
+$ aws application-autoscaling register-scalable-target --service-namespace custom-resource --scalable-dimension custom-resource:ResourceType:Property --resource-id file://~/custom-resource-id.txt --min-capacity 0 --max-capacity 10
+```
 
-The state of each *scalableTargetDimensionId* can be set by issuing a PATCH to the API with the appropriate json body payload. 
- ```
-{"scalingStatus": "Successful", "actualCapacity": 2.0}
-```   
-The current implementation saves state into files in *$API_HOME/var/www/state/* on the local host.  
-For an actual production system, state should be managed in a highly available data store accessible from multiple hosts.  
-This change could be as simple as saving state to an NFS system, or by re-writing the *write_state* and *read_state* functions in *api.py* to talk to a NoSql key-value store.  
+This registers your scalable target with Application Auto Scaling, and allows it to manage capacity, but only within the range of 0 to 10 capacity units. 
 
-### Security considerations for production mode
-*The following steps close security holes that are intentionally open for dev and test.  Follow your own security best practices if you deploy this system.*    
-Disable port 80 on one or more layers of the system  
-* Docker layer  
-Remove *-p 80:80* from the *docker run* statement   
-* Apache layer   
-Disable the Apache VirtualHosts that listen on 80  
+## 7. Create a Scaling Policy
+
+In this step, you create a sample scaling policy for your custom resource that specifies how the scalable target should be scaled when CloudWatch alarms are triggered. 
+
+For example, for target tracking, you define a target tracking scaling policy that meets your resource's specific requirements by creating a custom metric. You can define a custom metric based on any metric that changes in proportion to scaling.
+
+Not all metrics work for target tracking. The metric must be a valid utilization metric, and it must describe how busy your custom resource is. The value of the metric must increase or decrease in inverse proportion to the number of capacity units. That is, the value of the metric should decrease when capacity increases. 
+
+The following cat command creates a sample metric for your scalable target in a `config.json` file in your home directory:
+
+```
+$ cat ~/config.json
+{
+   "TargetValue":50,
+   "CustomizedMetricSpecification":{
+      "MetricName":"MyAverageUtilizationMetric",
+      "Namespace":"MyNamespace",
+      "Dimensions":[
+         {
+            "Name":"MyMetricDimensionName",
+            "Value":"MyMetricDimensionValue"
+         }
+      ],
+      "Statistic":"Average",
+      "Unit":"Percent"
+   }
+}
+```
+
+Use the following [put-scaling-policy](https://docs.aws.amazon.com/cli/latest/reference/application-autoscaling/put-scaling-policy.html) command, along with the `config.json` file you created previously, to create a scaling policy named `custom-tt-scaling-policy` that keeps the average utilization of your custom resource at 50 percent:
+
+```
+$ aws application-autoscaling put-scaling-policy \
+--policy-name custom-tt-scaling-policy \
+--policy-type TargetTrackingScaling \
+--service-namespace custom-resource \
+--scalable-dimension custom-resource:ResourceType:Property \
+--resource-id file://~/custom-resource-id.txt \
+--target-tracking-scaling-policy-configuration file://~/config.json
+{
+    "Alarms": [
+        {
+            "AlarmName": "TargetTracking-https://example.execute-api.us-west-2.amazonaws.com/prod/scalableTargetDimensions/1-23456789-AlarmHigh-b9d32d65-78bb-4d01-8931-d67d10f87052",
+            "AlarmARN": "arn:aws:cloudwatch:us-west-2:544955126770:alarm:TargetTracking-https://example.execute-api.us-west-2.amazonaws.com/prod/scalableTargetDimensions/1-23456789-AlarmHigh-b9d32d65-78bb-4d01-8931-d67d10f87052"
+        },
+        {
+            "AlarmName": "TargetTracking-https://example.execute-api.us-west-2.amazonaws.com/prod/scalableTargetDimensions/1-23456789-AlarmLow-a9f90ec7-dccd-4a66-83ea-26bf3f0134dc",
+            "AlarmARN": "arn:aws:cloudwatch:us-west-2:544955126770:alarm:TargetTracking-https://example.execute-api.us-west-2.amazonaws.com/prod/scalableTargetDimensions/1-23456789-AlarmLow-a9f90ec7-dccd-4a66-83ea-26bf3f0134dc"
+        }
+    ],
+    "PolicyARN": "arn:aws:autoscaling:us-west-2:544955126770:scalingPolicy:ac852aff-b04f-427d-a80a-3e7ef31d492d:resource/custom-resource/https://example.execute-api.us-west-2.amazonaws.com/prod/scalableTargetDimensions/1-23456789:policyName/custom-tt-scaling-policy"
+}
+```
+
+This creates two alarms: one for scaling out and one for scaling in. It also returns the Amazon Resource Name (ARN) of the policy that is registered with CloudWatch, which CloudWatch uses to invoke scaling whenever the metric is in breach. 
+
+You can find additional information about custom metrics in the CloudWatch documentation under [Publish Custom Metrics](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/publishingMetrics.html).
+
+## 8. Test the Scaling Policy 
+
+Now you can test your scaling policy by publishing sample metric data to CloudWatch. CloudWatch alarms will trigger the scaling policy and calculate the scaling adjustment based on the metric and the target value. To do this, you will run a bash script. 
+
+Type the following command to run the bash script:
+
 ```bash
-docker exec api /usr/sbin/a2dissite 1-api-80.conf  
-docker exec api /usr/sbin/a2dissite 3-api-internal-80.conf
-docker exec api /usr/sbin/apachectl restart  
-```  
-* Block external port 80 traffic in your firewall or AWS VPC Security Group   
-
-Disable access to docroot by editing the relevant virtual host conf files  
+// Command to put metric data that breaches AlarmHigh
+$ while sleep 3
+do
+  aws cloudwatch put-metric-data --metric-name MyAverageUtilizationMetric --namespace MyNamespace --value 70 --unit Percent --dimensions MyMetricDimensionName=MyMetricDimensionValue
+  echo -n "."
+done
 ```
-$API_HOME/etc/apache2/sites-available/0-api.conf
-$API_HOME/etc/apache2/sites-available/1-api-80.conf
-$API_HOME/etc/apache2/sites-available/2-api-internal.conf
-$API_HOME/etc/apache2/sites-available/3-api-internal-80.conf
+It may take a few minutes before your scaling policy is invoked. When the target ratio exceeds 50 percent for a sustained period of time, Application Auto Scaling notifies your custom resource to adjust capacity upward, so that the 50 percent target utilization can be maintained.
+
+## 9. View Application Auto Scaling Actions
+
+In this step, you view the Application Auto Scaling actions that are initiated on your behalf.
+
+Run the [describe-scaling-activities](https://docs.aws.amazon.com/cli/latest/reference/application-autoscaling/describe-scaling-activities.html) command:
+
 ```
-and un-commenting the following text block   
+$ aws application-autoscaling describe-scaling-activities --service-namespace custom-resource --resource-id file://~/custom-resource-id.txt --max-results 20
 ```
-#<Directory "/var/www/html/">
-#       Options FollowSymLinks
-#       AllowOverride None
-#       Order Deny,Allow
-#       Deny from All
-#</Directory>
-```   
-Require a host certificate as documented above  
-Apache only supports a single host certificate per VirtualHost so enabling host certificates in 0-api.conf will block all other https client acccess.   
-You can continue to access the api by configuring an alternate dns ServerName in the *2-api-internal.conf* or *3-api-internal-80.conf* conf files.  To use https for internal api access you will need to set up valid SSL certificates.  
 
-To auto-renew the Let's Encrypt certificate, run the following as a scheduled command on your host. 
-`docker exec api /usr/bin/certbot renew`  
+You should eventually see output that looks like this: 
+```JSON
+{
+    "ScalingActivities": [
+        {
+            "ScalableDimension": "custom-resource:ResourceType:Property",
+            "Description": "Setting desired capacity to 6.",
+            "ResourceId": "https://example.execute-api.us-west-2.amazonaws.com/prod/scalableTargetDimensions/1-23456789",
+            "ActivityId": "2fca0873-3e4d-4c05-a83d-40c6394e6b9b",
+            "StartTime": 1530744698.087,
+            "ServiceNamespace": "custom-resource",
+            "EndTime": 1530744730.766,
+            "Cause": "monitor alarm TargetTracking-https://example.execute-api.us-west-2.amazonaws.com/prod/scalableTargetDimensions/1-23456789-AlarmHigh-b9d32d65-78bb-4d01-8931-d67d10f87052 in state ALARM triggered policy custom-tt-scaling-policy",
+            "StatusMessage": "Successfully set desired capacity to 6. Change successfully fulfilled by custom-resource.",
+            "StatusCode": "Successful"
+        }
+    ]
+}
+```
+If you are using the [sample-api-server](./sample-api-server/) provided in this project, you can also see the scaling events in the API log.  
 
+Once you've viewed the scaling activity and verified scaling works, you can press Ctrl+C to stop the bash script.
 
+# License Summary
+
+This sample code is made available under a modified MIT-0 license. See the [LICENSE](https://github.com/aws/aws-auto-scaling-custom-resource/blob/master/LICENSE) file.
