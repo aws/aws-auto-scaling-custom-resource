@@ -1,5 +1,4 @@
-#### Announcing new region availability: Custom resource auto scaling is now available in the China (Beijing) region.
-* * *
+
 
 In this aws-auto-scaling-custom-resource repository, we demonstrate how to set up automatic scaling for custom resources using AWS services. In this context, a *custom resource* is an object that allows you to introduce your own application or service to the automatic scaling features of AWS.  
 
@@ -48,9 +47,9 @@ Follow the step-by-step instructions in this section to build and test the custo
 
 ## 1. Test your REST Endpoint URL
 
-Before running the CloudFormation template, you need an HTTP/HTTPS endpoint to expose your REST resources. Make sure your application conforms to the REST API specification in the [custom-resource-stack.yaml](https://github.com/aws/aws-auto-scaling-custom-resource/blob/master/cloudformation/templates/custom-resource-stack.yaml) CloudFormation template.  
+Before running the CloudFormation template, you need an HTTP/HTTPS endpoint to expose your REST resources. Make sure that your application conforms to the REST API specification in the [custom-resource-stack.yaml](https://github.com/aws/aws-auto-scaling-custom-resource/blob/master/cloudformation/templates/custom-resource-stack.yaml) CloudFormation template.  
 
-A sample REST endpoint is provided as a Dockerized Apache Python cgi.   See: [sample-api-server](./sample-api-server/)  
+Note: If you need a test environment and are familiar with Docker, a sample REST endpoint is provided as a Dockerized Apache Python CGI. For more information, see [sample-api-server](./sample-api-server/).
 
 After you create an endpoint that contains the required REST resources, you can verify that the endpoint URL works by issuing GET and PATCH requests to it, for example: 
 
@@ -81,7 +80,8 @@ Download the [custom-resource-stack.yaml](https://github.com/aws/aws-auto-scalin
 Run the following [create-stack](https://docs.aws.amazon.com/cli/latest/reference/cloudformation/create-stack.html) command, adding your details to the following parameters:
 
 1. *SNSSubscriptionEmail*: Replace *email-address* with an email address to send certificate expiry notifications to.
-2. *IntegrationHttpEndpoint*: Replace *endpoint-url* with your REST endpoint URL, for example, http://api.example.com/v1/scalableTargetDimensions/{scalableTargetDimensionId}
+2. *IntegrationHttpEndpoint*: Replace *endpoint-url* with your REST endpoint URL, for example, http://api.example.com/v1/scalableTargetDimensions/{scalableTargetDimensionId} where *{scalableTargetDimensionId}* is replaced with the dimension in your backend API, which might look something like: http://api.example.com/v1/scalableTargetDimensions/1-23456789.
+
 
 Make a note of the AWS [region](https://docs.aws.amazon.com/general/latest/gr/rande.html) where you created this stack. You need it later. Note: The examples in this repository use us-west-2, but the steps will be the same if you deploy into a different region. 
 
@@ -127,15 +127,15 @@ This returns the following response:
     "OutputValue": "https://example.execute-api.us-west-2.amazonaws.com/prod/scalableTargetDimensions/",
     "OutputKey": "ProdResourceIdPrefix"
   },
- {
-    "Description": "API Gateway Client Cert",
+{
+   "Description": "API Gateway Client Cert",
     "OutputKey": "PreProdClientCertificate",
-    "OutputValue": "tt3rdw"
+    "OutputValue": "MIIDoTCCAwqgAwIBAgIMCRkox...tt3rdw"
   },
   {
     "Description": "API Gateway Client Cert",
     "OutputKey": "ProdClientCertificate",
-    "OutputValue": "frw3tnx"
+    "OutputValue": "MIIDVDCCAr0CAQAweTEeMBwG...frw3tnx"
   }
 ]
 ```
@@ -153,18 +153,17 @@ The identifier is a string that identifies a scalable resource in your backend s
 
 ## 4. Configure SSL/HTTPS  
 
-To configure the SSL/HTTPS connection between the API Gateway and your backend system, you need to download the ProdClientCertificate and PreProdClientCertificate from API Gateway.
+To configure the SSL/HTTPS connection between the API Gateway and your backend system, you need to download the `ProdClientCertificate` and `PreProdClientCertificate` from API Gateway.
 
-Get the `API Gateway Client Cert` Outputvalue(s) from the describe-stacks command from the previous step.
+Using the `describe-stacks` command from the previous step, get the `API Gateway Client Cert` output values.
 
-Pass the following cli commands, replacing the `client-certificate-id` with your own, and save the certificate output.
+Once you have the certificates, you can run the following AWS CLI commands, replacing the `client-certificate-id` with your own values, and save the certificate output.
 
-`aws apigateway get-client-certificate --client-certificate-id frw3tnx --output text`
+`aws apigateway get-client-certificate --client-certificate-id MIIDVDCCAr0CAQAweTEeMBwG...frw3tnx --output text`
 
-`aws apigateway get-client-certificate --client-certificate-id tt3rdw --output text`
+`aws apigateway get-client-certificate --client-certificate-id MIIDoTCCAwqgAwIBAgIMCRkox...tt3rdw --output text`
 
 For more information, see [Use Client-Side SSL Certificates for Authentication by the Backend](https://docs.aws.amazon.com/apigateway/latest/developerguide/getting-started-client-side-ssl-authentication.html) in the *Amazon API Gateway Developer Guide*.
-
 
 ## 5. Test the API Gateway Integration
 
@@ -256,7 +255,7 @@ $ aws application-autoscaling put-scaling-policy \
 --resource-id file://~/custom-resource-id.txt \
 --target-tracking-scaling-policy-configuration file://~/config.json
 {
-    "Alarms": [
+   "Alarms": [
         {
             "AlarmName": "TargetTracking-https://example.execute-api.us-west-2.amazonaws.com/prod/scalableTargetDimensions/1-23456789-AlarmHigh-b9d32d65-78bb-4d01-8931-d67d10f87052",
             "AlarmARN": "arn:aws:cloudwatch:us-west-2:544955126770:alarm:TargetTracking-https://example.execute-api.us-west-2.amazonaws.com/prod/scalableTargetDimensions/1-23456789-AlarmHigh-b9d32d65-78bb-4d01-8931-d67d10f87052"
@@ -319,7 +318,7 @@ You should eventually see output that looks like this:
     ]
 }
 ```
-If you are using the [sample-api-server](./sample-api-server/) provided in this project, you can also see the scaling events in the API log.  
+Note: If you are using the [sample-api-server](./sample-api-server/) that is provided in this project, you can also see the scaling events in the API log.  
 
 Once you've viewed the scaling activity and verified scaling works, you can press Ctrl+C to stop the bash script.
 
