@@ -504,3 +504,9 @@ Outputs:
   S3BucketName:
       Value: !Ref S3Bucket
       Description: The location of the CloudTrail logs for API-related event history.
+  PreProdClientCertificate:
+      Value: !Ref PreProdClientCertificate
+      Description: API Gateway Client Cert
+  ProdClientCertificate:
+      Value: !Ref ProdClientCertificate
+      Description: API Gateway Client Cert

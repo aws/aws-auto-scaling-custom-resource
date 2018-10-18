@@ -48,7 +48,9 @@ Follow the step-by-step instructions in this section to build and test the custo
 
 ## 1. Test your REST Endpoint URL
 
-Before running the CloudFormation template, you need an HTTP/HTTPS endpoint to expose your REST resources. Make sure your application conforms to the REST API specification in the [custom-resource-stack.yaml](https://github.com/aws/aws-auto-scaling-custom-resource/blob/master/cloudformation/templates/custom-resource-stack.yaml) CloudFormation template. 
+Before running the CloudFormation template, you need an HTTP/HTTPS endpoint to expose your REST resources. Make sure your application conforms to the REST API specification in the [custom-resource-stack.yaml](https://github.com/aws/aws-auto-scaling-custom-resource/blob/master/cloudformation/templates/custom-resource-stack.yaml) CloudFormation template.  
+
+A sample REST endpoint is provided as a Dockerized Apache Python cgi.   See: [sample-api-server](./sample-api-server/)  
 
 After you create an endpoint that contains the required REST resources, you can verify that the endpoint URL works by issuing GET and PATCH requests to it, for example: 
 
@@ -79,7 +81,7 @@ Download the [custom-resource-stack.yaml](https://github.com/aws/aws-auto-scalin
 Run the following [create-stack](https://docs.aws.amazon.com/cli/latest/reference/cloudformation/create-stack.html) command, adding your details to the following parameters:
 
 1. *SNSSubscriptionEmail*: Replace *email-address* with an email address to send certificate expiry notifications to.
-2. *IntegrationHttpEndpoint*: Replace *endpoint-url* with your REST endpoint URL, for example, http://api.example.com/v1/scalableTargetDimensions/1-23456789.
+2. *IntegrationHttpEndpoint*: Replace *endpoint-url* with your REST endpoint URL, for example, http://api.example.com/v1/scalableTargetDimensions/{scalableTargetDimensionId}
 
 Make a note of the AWS [region](https://docs.aws.amazon.com/general/latest/gr/rande.html) where you created this stack. You need it later. Note: The examples in this repository use us-west-2, but the steps will be the same if you deploy into a different region. 
 
@@ -93,18 +95,11 @@ $ aws cloudformation create-stack \
         ParameterKey=SNSSubscriptionEmail,ParameterValue="email-address" \
         ParameterKey=IntegrationHttpEndpoint,ParameterValue='"endpoint-url"'
 ```
-
-## 3. Configure SSL/HTTPS  
-
 The stack takes only a few minutes to deploy. It creates a new REST API in API Gateway with two stages: “PreProd” and “Prod”. A stage defines the path through which an API deployment is accessible. Each stage is deployed with its own client-side certificate. 
 
 When the deployment has completed successfully, you’ll receive an email to confirm a subscription to the Amazon SNS topic created by the template. Choose the *Confirm subscription* link in the message to subscribe to emails that are sent whenever there is an expiring certificate. A Lambda function checks once a day to see if the client certificate is expiring in 7, 3, or 1 days.
 
-In addition to confirming your subscription to certificate expiration notices, you'll need to configure the SSL/HTTPS connection between the API Gateway and your backend system. 
-
-For more information, see [Use Client-Side SSL Certificates for Authentication by the Backend](https://docs.aws.amazon.com/apigateway/latest/developerguide/getting-started-client-side-ssl-authentication.html) in the *Amazon API Gateway Developer Guide*.
-
-## 4. Get the Resource ID
+## 3. Get the Resource ID & API Gateway client certificate IDs
 
 To continue with the deployment steps, you need the HTTPS link (aka Resource ID) for your API Gateway endpoint. 
 
@@ -131,6 +126,16 @@ This returns the following response:
     "Description": "Application Auto Scaling Resource ID prefix for Prod",
     "OutputValue": "https://example.execute-api.us-west-2.amazonaws.com/prod/scalableTargetDimensions/",
     "OutputKey": "ProdResourceIdPrefix"
+  },
+ {
+    "Description": "API Gateway Client Cert",
+    "OutputKey": "PreProdClientCertificate",
+    "OutputValue": "tt3rdw"
+  },
+  {
+    "Description": "API Gateway Client Cert",
+    "OutputKey": "ProdClientCertificate",
+    "OutputValue": "frw3tnx"
   }
 ]
 ```
@@ -145,6 +150,21 @@ The identifier is a string that identifies a scalable resource in your backend s
 **Example: Resource ID where “1-23456789” is the identifier in your backend system**
 
 `https://example.execute-api.us-west-2.amazonaws.com/prod/scalableTargetDimensions/1-23456789`
+
+## 4. Configure SSL/HTTPS  
+
+To configure the SSL/HTTPS connection between the API Gateway and your backend system, you need to download the ProdClientCertificate and PreProdClientCertificate from API Gateway.
+
+Get the `API Gateway Client Cert` Outputvalue(s) from the describe-stacks command from the previous step.
+
+Pass the following cli commands, replacing the `client-certificate-id` with your own, and save the certificate output.
+
+`aws apigateway get-client-certificate --client-certificate-id frw3tnx --output text`
+
+`aws apigateway get-client-certificate --client-certificate-id tt3rdw --output text`
+
+For more information, see [Use Client-Side SSL Certificates for Authentication by the Backend](https://docs.aws.amazon.com/apigateway/latest/developerguide/getting-started-client-side-ssl-authentication.html) in the *Amazon API Gateway Developer Guide*.
+
 
 ## 5. Test the API Gateway Integration
 
@@ -299,6 +319,7 @@ You should eventually see output that looks like this:
     ]
 }
 ```
+If you are using the [sample-api-server](./sample-api-server/) provided in this project, you can also see the scaling events in the API log.  
 
 Once you've viewed the scaling activity and verified scaling works, you can press Ctrl+C to stop the bash script.
 
