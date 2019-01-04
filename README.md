@@ -192,7 +192,7 @@ curl -X GET \ https://example.execute-api.us-west-2.amazonaws.com/prod/scalableT
 
 ## 6. Register Your Scalable Target
 
-You will now register your resource's capacity as a scalable target with Application Auto Scaling. A scalable target is a resource that Application Auto Scaling can scale out or scale in.
+You can now register your resource as a scalable target with Application Auto Scaling. A scalable target is a resource that Application Auto Scaling can scale out or scale in.
 
 Note: Be sure to use the correct permissions when registering a scalable target, so that the [service-linked role](https://docs.aws.amazon.com/autoscaling/application/userguide/application-auto-scaling-service-linked-roles.html) is automatically created. Otherwise, the scaling function will not work. 
 
