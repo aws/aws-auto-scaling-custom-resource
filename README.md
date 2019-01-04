@@ -166,7 +166,7 @@ For more information, see [Use Client-Side SSL Certificates for Authentication b
 
 The next step is to verify that the API in API Gateway is integrated with your application. The [Postman](https://www.getpostman.com/) app is a convenient testing tool for verifying this because it provides fields for adding your signing information to an HTTPS request.
 
-Follow the instructions in [Use Postman to Call an API](https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-use-postman-to-call-api.html) to send a test request in Postman. If you want, you can convert the response to CURL using the code snippet generator to view the headers and body. The responses for GET and PATCH requests should be similar to the response displayed in step 1. 
+Follow the instructions in [Use Postman to Call an API](https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-use-postman-to-call-api.html) to send a test request in Postman. If you want, you can convert the response to CURL using the code snippet generator to view the headers and body. 
 
 For a GET request, the Postman CURL response will look something like:
 
@@ -196,7 +196,7 @@ You will now register your resource's capacity as a scalable target with Applica
 
 Note: Be sure to use the correct permissions when registering a scalable target, so that the [service-linked role](https://docs.aws.amazon.com/autoscaling/application/userguide/application-auto-scaling-service-linked-roles.html) is automatically created. Otherwise, the scaling function will not work. 
 
-Before you register your scalable target, you'll need to run the following command to save the Resource ID in a txt file (with no newline character at the end of the file). Provide the Resource ID from step 4. 
+Before you register your scalable target, you'll need to run the following command to save the Resource ID in a txt file (with no newline character at the end of the file). Provide the Resource ID from step 3. 
 
 The command will look like this, but with your Resource ID:
 
@@ -325,13 +325,13 @@ Note: If you are using the [sample-api-server](./sample-api-server/) that is pro
 
 ## 10. Deregister a Scalable Target
 
-To deregister a scalable target that you no longer need, use the [deregister-scalable-target](https://docs.aws.amazon.com/cli/latest/reference/application-autoscaling/deregister-scalable-target.html) command to deregister your scalable target:
+To deregister a scalable target that you no longer need, use the txt file you created in step 6 and run the [deregister-scalable-target](https://docs.aws.amazon.com/cli/latest/reference/application-autoscaling/deregister-scalable-target.html) command:
 
 ```
 $ aws application-autoscaling deregister-scalable-target --service-namespace custom-resource --scalable-dimension custom-resource:ResourceType:Property --resource-id file://~/custom-resource-id.txt
 ```
 
-Deregistering a scalable target deletes the target tracking scaling policies and the CloudWatch alarms that AWS Auto Scaling created on your behalf. 
+Deregistering a scalable target deletes the target tracking scaling policies and the CloudWatch alarms that Application Auto Scaling created on your behalf. 
 
 # License Summary
 
