@@ -44,9 +44,9 @@ Custom resource auto scaling is available in Canada (Central), US West (N. Calif
 
 Follow the step-by-step instructions in this section to build and test the custom resource auto scaling environment in your AWS account. The CloudFormation template provided with this repository creates the core AWS components from scratch. 
 
-## 1. Build and Test your REST Endpoint URL
+## 1. Build and Test Your REST Endpoint URL 
 
-Before running the CloudFormation template, you need an HTTP/HTTPS endpoint to expose your REST resources. Make sure that your application conforms to the REST API specification in the [custom-resource-stack.yaml](https://github.com/aws/aws-auto-scaling-custom-resource/blob/master/cloudformation/templates/custom-resource-stack.yaml) CloudFormation template.  
+Before running the CloudFormation template, you need an HTTP/HTTPS endpoint to expose your REST resources using GET and PATCH methods. Make sure that your application conforms to the REST API specification in the [custom-resource-stack.yaml](https://github.com/aws/aws-auto-scaling-custom-resource/blob/master/cloudformation/templates/custom-resource-stack.yaml) CloudFormation template.  
 
 Note: If you need a test environment and are familiar with Docker, a sample REST endpoint is provided as a Dockerized Apache Python CGI. For more information, see [sample-api-server](./sample-api-server/).
 
@@ -98,7 +98,7 @@ The stack takes only a few minutes to deploy. It creates a new REST API in API G
 
 When the deployment has completed successfully, you’ll receive an email to confirm a subscription to the Amazon SNS topic created by the template. Choose the *Confirm subscription* link in the message to subscribe to emails that are sent whenever there is an expiring certificate. A Lambda function checks once a day to see if the client certificate is expiring in 7, 3, or 1 days.
 
-## 3. Get the Resource ID & API Gateway client certificate IDs
+## 3. Get the Resource ID and API Gateway Client Certificate IDs
 
 To continue with the deployment steps, you need the HTTPS link (aka Resource ID) for your API Gateway endpoint. 
 
@@ -190,7 +190,7 @@ curl -X GET \ https://example.execute-api.us-west-2.amazonaws.com/prod/scalableT
 }
 ```
 
-## 6. Register a Scalable Target
+## 6. Register Your Scalable Target
 
 You will now register your resource's capacity as a scalable target with Application Auto Scaling. A scalable target is a resource that Application Auto Scaling can scale out or scale in.
 
@@ -291,9 +291,9 @@ This script publishes data points to CloudWatch to trigger the scaling policy ba
 
 It may take a few minutes before your scaling policy is invoked. When the target ratio exceeds 50 percent for a sustained period of time, Application Auto Scaling notifies your custom resource to adjust capacity upward, so that the 50 percent target utilization can be maintained.
 
-## 9. View Application Auto Scaling Actions
+## 9. View the Scaling Actions 
 
-In this step, you view the Application Auto Scaling actions that were created in response to the bash script in the previous step.
+In this step, you view the scaling actions that were created in response to the bash script in the previous step.
 
 Run the [describe-scaling-activities](https://docs.aws.amazon.com/cli/latest/reference/application-autoscaling/describe-scaling-activities.html) command:
 
