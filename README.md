@@ -164,7 +164,7 @@ For more information, see [Use Client-Side SSL Certificates for Authentication b
 
 ## 5. Test the API Gateway Integration
 
-The next step is to verify that the API in API Gateway is integrated with your application. The [Postman](https://www.getpostman.com/) app is a convenient testing tool for verifying this because it provides fields for adding your signing information to an HTTPS request.
+The next step is to verify that the API in API Gateway is integrated with your application. The [Postman](https://www.getpostman.com/) app is a convenient testing tool because it provides fields for adding your [Signature Version 4](https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html) signing information to an HTTPS request.
 
 Follow the instructions in [Use Postman to Call an API](https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-use-postman-to-call-api.html) to send a test request in Postman. If you want, you can convert the response to CURL using the code snippet generator to view the headers and body. 
 
