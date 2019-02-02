@@ -270,7 +270,7 @@ This creates two alarms: one for scaling out and one for scaling in. It also ret
 
 For more information about target tracking scaling policies, see [Target Tracking Scaling Policies for Application Auto Scaling ](https://docs.aws.amazon.com/autoscaling/application/userguide/application-auto-scaling-target-tracking.html) in the Application Auto Scaling documentation.
 
-For more information about creaing custom metrics, see [Publish Custom Metrics](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/publishingMetrics.html) in the CloudWatch documentation. 
+For more information, see [Publish Custom Metrics](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/publishingMetrics.html) in the CloudWatch documentation. 
 
 ## 8. Trigger the Scaling Policy Using a Bash Script
 
