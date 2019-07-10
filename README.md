@@ -78,7 +78,7 @@ NOTE: You may incur AWS charges as part of this deployment. Please monitor your 
 1. Download the [custom-resource-stack.yaml](https://github.com/aws/aws-auto-scaling-custom-resource/blob/master/cloudformation/templates/custom-resource-stack.yaml) CloudFormation template from GitHub.
 1. Run the following [create-stack](https://docs.aws.amazon.com/cli/latest/reference/cloudformation/create-stack.html) command, adding your details as follows:
 - For `SNSSubscriptionEmail`, replace `email-address` with the email address where you want certificate expiry notifications to be sent.
-- For `IntegrationHttpEndpoint`, replace `endpoint-url` with your REST endpoint URL. For example, http://api.example.com/v1/scalableTargetDimensions/*{scalableTargetDimensionId}* where *{scalableTargetDimensionId}*  is replaced with the dimension in your backend API. The resulting URL would look something like: http://api.example.com/v1/scalableTargetDimensions/*1-23456789*.
+- For `IntegrationHttpEndpoint`, replace `endpoint-url` with your REST endpoint URL. For example, `http://api.example.com/v1/scalableTargetDimensions/*{scalableTargetDimensionId}` where *{scalableTargetDimensionId}*  is replaced with the dimension in your backend API. The resulting URL would look something like: `http://api.example.com/v1/scalableTargetDimensions/1-23456789`.
 - (Optional) Change the [AWS Region](https://docs.aws.amazon.com/general/latest/gr/rande.html) by updating the `--region` value. The examples in this repository use `us-west-2`, but the steps are the same if you deploy into a different region. 
 
 The following example shows a sample create-stack command.
