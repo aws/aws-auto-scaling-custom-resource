@@ -318,7 +318,7 @@ do
 done
 ```
 
-This script publishes data points to CloudWatch to trigger the scaling policy based on live metric data. The `while` loop is used to perform the CLI command an unknown number of times. The `sleep 3` conditions pauses the execution for 3 seconds on each iteration. After you verify that scaling works (which is the next step in this procedure), press Ctrl+C to stop the script.
+This script publishes data points to CloudWatch to trigger the scaling policy based on live metric data. The `while` loop is used to perform the CLI command an unknown number of times. The `sleep 3` condition pauses the execution for 3 seconds on each iteration. After you verify that scaling works (which is the next step in this procedure), press Ctrl+C to stop the script.
 
 It may take a few minutes before your scaling policy is invoked. When the target ratio exceeds 50 percent for a sustained period of time, Application Auto Scaling notifies your custom resource to adjust capacity upward, so that the 50 percent target utilization can be maintained.
 
