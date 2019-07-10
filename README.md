@@ -116,7 +116,9 @@ The following is the full list of created resources:
 
 ## Step 3: Gather the Stack's Output
 
-To continue with these steps, you need the HTTPS prefixes of your new REST API in API Gateway and, optionally, the IDs of the client certificates from the stack. To do this, run the following [describe-stacks](https://docs.aws.amazon.com/cli/latest/reference/cloudformation/describe-stacks.html) command and copy the output. 
+To continue with these steps, you need the HTTPS prefixes of your new REST API in API Gateway and, optionally, the IDs of the client certificates from the stack. 
+
+Run the following [describe-stacks](https://docs.aws.amazon.com/cli/latest/reference/cloudformation/describe-stacks.html) command and copy the output. 
 
 ```
 $ aws cloudformation describe-stacks --region us-west-2 --stack-name CustomResourceAPIGatewayStack  | jq '.Stacks[0]["Outputs"]'
