@@ -78,7 +78,7 @@ NOTE: You may incur AWS charges as part of this deployment. Please monitor your 
 1. Download the [custom-resource-stack.yaml](https://github.com/aws/aws-auto-scaling-custom-resource/blob/master/cloudformation/templates/custom-resource-stack.yaml) CloudFormation template from GitHub.
 1. Run the following [create-stack](https://docs.aws.amazon.com/cli/latest/reference/cloudformation/create-stack.html) command, adding your details as follows:
 - For `SNSSubscriptionEmail`, replace `email-address` with the email address where you want certificate expiry notifications to be sent.
-- For `IntegrationHttpEndpoint`, replace `endpoint-url` with your REST endpoint URL. For example, `http://api.example.com/v1/scalableTargetDimensions/*{scalableTargetDimensionId}` where *{scalableTargetDimensionId}*  is replaced with the dimension in your backend API. The resulting URL would look something like: `http://api.example.com/v1/scalableTargetDimensions/1-23456789`.
+- For `IntegrationHttpEndpoint`, replace `endpoint-url` with your REST endpoint URL. For example, `http://api.example.com/v1/scalableTargetDimensions/{scalableTargetDimensionId}` where *{scalableTargetDimensionId}*  is replaced with the dimension in your backend API. The resulting URL would look something like: `http://api.example.com/v1/scalableTargetDimensions/1-23456789`.
 - (Optional) Change the [AWS Region](https://docs.aws.amazon.com/general/latest/gr/rande.html) by updating the `--region` value. The examples in this repository use `us-west-2`, but the steps are the same if you deploy into a different region. 
 
 The following example shows a sample create-stack command.
@@ -176,8 +176,7 @@ The next step is to verify that the API Gateway API is integrated with your back
 
 1. Create the string that identifies the path to the custom resource through the API Gateway (the Resource ID). The Resource ID has the following syntax: `[OutputValue][identifier]`. 
    - The `OutputValue` is the "Prod" HTTPS prefix from the `describe-stacks` output.   
-   - The identifier is a string that identifies a scalable resource in your backend system (the value for *scalableTargetDimensionId* from step 1). 
-Example showing “1-23456789” as the identifier in your backend system:
+   - The identifier is a string that identifies a scalable resource in your backend system (the value for *scalableTargetDimensionId* from step 1). This example shows a sample string with *1-23456789* as the identifier in your backend system:
 `https://example.execute-api.us-west-2.amazonaws.com/prod/scalableTargetDimensions/1-23456789`
 1. Follow the instructions in [Use Postman to Call an API](https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-use-postman-to-call-api.html) to send a test request in Postman. If you prefer to view the headers and body, you can convert the response to CURL by using the Postman code snippet generator. 
 
