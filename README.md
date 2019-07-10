@@ -176,7 +176,7 @@ The next step is to verify that the API Gateway API is integrated with your back
 
 1. Create the string that identifies the path to the custom resource through the API Gateway (the Resource ID). The Resource ID has the following syntax: `[OutputValue][identifier]`. 
    - The `OutputValue` is the "Prod" HTTPS prefix from the `describe-stacks` output.   
-   - The identifier is a string that identifies a scalable resource in your backend system (the value for *scalableTargetDimensionId* from step 1). This example shows a sample string with *1-23456789* as the identifier in your backend system:
+   - The `identifier` is a string that identifies a scalable resource in your backend system (the value for *scalableTargetDimensionId* from step 1). This example shows a sample string with *1-23456789* as the identifier in your backend system:
 `https://example.execute-api.us-west-2.amazonaws.com/prod/scalableTargetDimensions/1-23456789`
 1. Follow the instructions in [Use Postman to Call an API](https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-use-postman-to-call-api.html) to send a test request in Postman. If you prefer to view the headers and body, you can convert the response to CURL by using the Postman code snippet generator. 
 
