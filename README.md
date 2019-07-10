@@ -8,7 +8,7 @@ When everything is deployed and configured, you'll have the following environmen
 
 ![Image of Application Auto Scaling Custom Resource Environment](https://github.com/aws/aws-auto-scaling-custom-resource/blob/master/DESIGN.PNG)
 
-You can use the *aws-auto-scaling-custom-resource* repository and the following procedures as the starting point for your customizations. More information about this approach to custom resource auto scaling is detailed in this [Auto Scaling Production Services on Titus](https://medium.com/netflix-techblog/auto-scaling-production-services-on-titus-1f3cd49f5cd7).
+You can use the *aws-auto-scaling-custom-resource* repository and the following procedures as the starting point for your customizations. More information about this approach to custom resource auto scaling is detailed in this [Auto Scaling Production Services on Titus](https://medium.com/netflix-techblog/auto-scaling-production-services-on-titus-1f3cd49f5cd7) blog post.
 
 If you encounter an issue with the CloudFormation template, or if you are unsure how to solve a problem, we want to hear about it. Please create a GitHub issue. We welcome all feedback, pull requests, and other contributions.
 
@@ -38,15 +38,15 @@ Custom resource auto scaling is available in Canada (Central), US West (N. Calif
 
 * AWS Command Line Interface [installed](https://docs.aws.amazon.com/cli/latest/userguide/installing.html) and [configured](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html).  
 * [Postman](https://www.getpostman.com/) installed.  This tool allows you to test your API endpoints and observe the responses. Postman is a convenient testing tool because it provides fields for adding your [Signature Version 4](https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html) signing information to an HTTPS request.
-* Make sure you have permissions to create a stack using a CloudFormation template, plus full access permissions to resources within the stack.
+* Make sure that you have permissions to create a stack using a CloudFormation template, plus full access permissions to resources within the stack.
 
 # Set Up the AWS Serverless Functions
 
 This section describes how to set up and test the required serverless functions in your AWS account. 
 
-## Step 1: Build and Test Your REST Endpoint URL 
+## Step 1: Test Your REST Endpoint URL 
 
-The provided CloudFormation template defines the serverless functions that will be created. Before you launch the stack, you must verify that your backend system conforms to the REST API specification that's supported by the template.
+The provided CloudFormation template defines the serverless functions that will be created. Before you launch the stack, you must verify that your backend system conforms to the API specification that's supported by the template. (Alternatively, if you need a test environment and are familiar with Docker, a sample REST endpoint is provided as a Dockerized Apache Python CGI. For more information, see [sample-api-server](./sample-api-server/).)
 
 1. Configure the GET and PATCH request methods to connect with the Amazon API Gateway. For more information on these methods, see the `CustomResourceEndpoint` section of the [custom-resource-stack.yaml](https://github.com/aws/aws-auto-scaling-custom-resource/blob/master/cloudformation/templates/custom-resource-stack.yaml) template.
 1. Verify that your backend system's REST endpoint URL works by using the following command to issue GET and PATCH requests to it.
@@ -70,8 +70,6 @@ The following is an example GET and PATCH response.
   "version": "MyVersion"
 }
 ```
-
-Note: If you need a test environment and are familiar with Docker, a sample REST endpoint is provided as a Dockerized Apache Python CGI. For more information, see [sample-api-server](./sample-api-server/).
 
 ## Step 2: Launch the CloudFormation Stack
 
@@ -177,7 +175,7 @@ The output can be used to configure your backend system to verify the client SSL
 The next step is to verify that the API Gateway API is integrated with your backend system.
 
 1. Create the string that identifies the path to the custom resource through the API Gateway (the Resource ID). The Resource ID has the following syntax: `[OutputValue][identifier]`. 
-   - The `OutputValue` is one of the HTTPS prefixes ("Prod" or "Preprod") from the `describe-stacks` output.   
+   - The `OutputValue` is the "Prod" HTTPS prefix from the `describe-stacks` output.   
    - The identifier is a string that identifies a scalable resource in your backend system (the value for *scalableTargetDimensionId* from step 1). 
 Example showing “1-23456789” as the identifier in your backend system:
 `https://example.execute-api.us-west-2.amazonaws.com/prod/scalableTargetDimensions/1-23456789`
@@ -234,7 +232,8 @@ $ aws application-autoscaling register-scalable-target \
 --service-namespace custom-resource \
 --scalable-dimension custom-resource:ResourceType:Property \
 --resource-id file://~/custom-resource-id.txt \
---min-capacity 0 --max-capacity 10
+--min-capacity 0 --max-capacity 10 \
+--region us-west-2
 ```
 
 This registers your scalable target with Application Auto Scaling, and allows it to manage capacity within the range of 0 to 10 capacity units. 
@@ -277,7 +276,14 @@ $ aws application-autoscaling put-scaling-policy \
 --service-namespace custom-resource \
 --scalable-dimension custom-resource:ResourceType:Property \
 --resource-id file://~/custom-resource-id.txt \
---target-tracking-scaling-policy-configuration file://~/config.json
+--target-tracking-scaling-policy-configuration file://~/config.json \
+--region us-west-2
+```
+This creates two alarms: one for scaling out and one for scaling in. It also returns the Amazon Resource Name (ARN) of the policy that is registered with CloudWatch, which CloudWatch uses to invoke scaling whenever the metric is in breach. 
+
+You should see output similar to the following example.
+
+```json
 {
    "Alarms": [
         {
@@ -292,8 +298,6 @@ $ aws application-autoscaling put-scaling-policy \
     "PolicyARN": "arn:aws:autoscaling:us-west-2:544955126770:scalingPolicy:ac852aff-b04f-427d-a80a-3e7ef31d492d:resource/custom-resource/https://example.execute-api.us-west-2.amazonaws.com/prod/scalableTargetDimensions/1-23456789:policyName/custom-tt-scaling-policy"
 }
 ```
-
-This creates two alarms: one for scaling out and one for scaling in. It also returns the Amazon Resource Name (ARN) of the policy that is registered with CloudWatch, which CloudWatch uses to invoke scaling whenever the metric is in breach. 
 
 For more information about creating target tracking scaling policies, see [Target Tracking Scaling Policies](https://docs.aws.amazon.com/autoscaling/application/userguide/application-auto-scaling-target-tracking.html) in the Application Auto Scaling documentation.
 
@@ -332,7 +336,7 @@ Run the [describe-scaling-activities](https://docs.aws.amazon.com/cli/latest/ref
 $ aws application-autoscaling describe-scaling-activities \
 --service-namespace custom-resource \
 --resource-id file://~/custom-resource-id.txt \
---max-results 20
+--max-results 20 --region us-west-2
 ```
 
 You should eventually see output similar to the following example.
@@ -364,7 +368,8 @@ To deregister a scalable target that you no longer need, use the same txt file t
 $ aws application-autoscaling deregister-scalable-target \
 --service-namespace custom-resource \
 --scalable-dimension custom-resource:ResourceType:Property \
---resource-id file://~/custom-resource-id.txt
+--resource-id file://~/custom-resource-id.txt \
+--region us-west-2
 ```
 
 Deregistering a scalable target deletes the scaling policy and the CloudWatch alarms that Application Auto Scaling created on your behalf. 
