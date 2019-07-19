@@ -2,7 +2,7 @@
 
 This *aws-auto-scaling-custom-resource* repository contains templates and instructions to build, test, and remove automatic scaling for custom resources by using AWS serverless functions. In this context, a *custom resource* is an object that allows you to use the automatic scaling features of Application Auto Scaling with your own application or service.
 
-The included AWS CloudFormation template launches a collection of AWS resources, including a new Amazon API Gateway REST API. The API Gateway REST API allows secure access to scalable resources in your application or service.
+An AWS CloudFormation template is a JSON or YAML-formatted text file that describes the AWS infrastructure needed to run an application or service along with any interconnections among infrastructure components. The included AWS CloudFormation template launches a collection of AWS resources, including a new Amazon API Gateway REST API, as a stack. The API Gateway REST API allows secure access to scalable resources in your application or service.
 
 When everything is deployed and configured, you'll have the following environment in your AWS account.
 
