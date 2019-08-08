@@ -109,10 +109,10 @@ The following is the full list of created resources:
 - AWS::IAM::Role (A service role to grant Lambda permission to call API Gateway and SNS)
 - AWS::IAM::Role (A CloudWatch role required for certificate expiry checks)
 - AWS::Events::Rule (A CloudWatch rule required for certificate expiry checks)
-- AWS::Lambda::Permission (The permissions for CloudWatch to invoke the Lambda function)
+- AWS::Lambda::Permission (Permissions for CloudWatch to invoke the Lambda function)
 - AWS::CloudTrail::Trail
 - AWS::S3::Bucket (An S3 bucket to receive the log files for CloudTrail)
-- AWS::S3::BucketPolicy (The S3 bucket policy that grants access only to the created CloudTrail)
+- AWS::S3::BucketPolicy (An S3 bucket policy that grants access only to the created CloudTrail)
 
 ## Step 3: Gather the Stack's Output
 
